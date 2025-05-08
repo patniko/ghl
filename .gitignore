@@ -16,3 +16,5 @@ __MACOSX/._model_data
 dist/
 __pycache__/
 poetry.lock
+mlflow/mlartifacts/
+mlflow/mlruns/

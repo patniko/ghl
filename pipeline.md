@@ -898,3 +898,7 @@ The DINO model incorporates patient metadata to enhance diagnostic capabilities:
 - ⏸️ Complete small training run on DINO
 - ❓ Figure out where/if we need to parse clinical notes directly
 - ❓ Check with CMC to see if tabular checks can be run before de-id
+- ❓ Normalize smoking years to pack years
+- ❓ See if we can track unfiltered vs. filtered smoking years
+- ❓ Add chewable tobacco to the list of questions. Not always smoking.
+- ❓ Alcohol consumption is number of drinks per day
