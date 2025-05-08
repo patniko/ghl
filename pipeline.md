@@ -896,3 +896,4 @@ The DINO model incorporates patient metadata to enhance diagnostic capabilities:
 - ⏸️ Generate low quality sample data sets
 - ⏳ Validate all echo devices can be pre-processed and asessed for quality
 - ⏸️ Complete small training run on DINO
+- ❓ Figure out where/if we need to parse clinical notes directly
