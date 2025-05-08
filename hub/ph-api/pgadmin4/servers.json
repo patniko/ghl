@@ -1,0 +1,14 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "Warehouse API Database (Host)",
+            "Group": "Servers",
+            "Host": "host.docker.internal",
+            "Port": 30110,
+            "MaintenanceDB": "hub-api",
+            "Username": "main",
+            "SSLMode": "prefer",
+            "Password": "main"
+        }
+    }
+}

@@ -1,0 +1,18 @@
+.DS_Store
+# Project specific
+model_data/
+.ipynb_checkpoints/
+*.pyc
+saved_embeddings/*
+model_data.zip
+__MACOSX/._model_data
+
+# Environment variables and secrets
+.env.dev
+.env.prod
+
+# Poetry
+.venv/
+dist/
+__pycache__/
+poetry.lock

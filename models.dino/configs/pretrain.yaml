@@ -1,0 +1,40 @@
+data:
+  ptbxl_path: "./data/ptbxl"
+  custom_dataset_path: "./data/custom"
+  batch_size: 32
+  num_workers: 4
+  sample_rate: 100
+  duration: 10.0
+  lead_names: ['I', 'II', 'III', 'aVR', 'aVL', 'aVF', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6']
+
+model:
+  student_dim: 256
+  teacher_dim: 768
+  student_depth: 8
+  teacher_depth: 12
+  student_num_heads: 8
+  teacher_num_heads: 12
+  mlp_ratio: 4.0
+  patch_size: 32
+  overlap: 8
+  num_patches: 128
+  dropout: 0.1
+  out_dim: 65536
+  metadata_dim: 64
+
+training:
+  epochs: 100
+  warmup_epochs: 10
+  learning_rate: 1e-4
+  weight_decay: 0.04
+  momentum_teacher: 0.996
+  center_momentum: 0.9
+  teacher_temp: 0.04
+  warmup_teacher_temp: 0.04
+  freeze_teacher_backbone: True
+  freeze_student_backbone: False
+  output_dir: "./output/pretrain"
+  save_every: 10
+  log_every: 10
+
+phase: "pretrain"

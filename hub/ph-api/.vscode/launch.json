@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI Server",
+      "type": "python",
+      "request": "launch",
+      "module": "fastapi",
+      "args": ["dev", "server.py"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "preLaunchTask": "Run Database Migrations",
+      "env": {
+        "FASTAPI_ENV": "dev"
+      }
+    },
+    {
+      "name": "Task Service",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/tasks/main.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "preLaunchTask": "Run Database Migrations",
+      "env": {
+        "FASTAPI_ENV": "dev"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": ["FastAPI Server", "Task Service"],
+      "presentation": {
+        "hidden": false,
+        "group": "Development",
+        "order": 1
+      },
+      "stopAll": true
+    }
+  ]
+}

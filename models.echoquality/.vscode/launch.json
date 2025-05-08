@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Quality Model",
+        "type": "python",
+        "request": "launch",
+        "module": "poetry",
+        "cwd": "${workspaceFolder}",
+        "justMyCode": false,
+        "args": [
+            "EchoPrime_qc.py"
+        ]
+      }
+    ]
+  }
+  

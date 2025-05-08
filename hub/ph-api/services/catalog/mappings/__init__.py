@@ -1,0 +1,1 @@
+# Mappings catalog package initialization

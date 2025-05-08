@@ -1,0 +1,12 @@
+#!/bin/bash
+# Wrapper script to run create_user.py with Poetry
+
+# Change to the API directory
+cd "$(dirname "$0")/.."
+
+# Set the environment to development by default
+export FASTAPI_ENV=${FASTAPI_ENV:-dev}
+echo "Using FASTAPI_ENV: $FASTAPI_ENV"
+
+# Run the script with Poetry
+poetry run python utilities/create_user.py "$@"
