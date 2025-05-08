@@ -884,3 +884,15 @@ The DINO model incorporates patient metadata to enhance diagnostic capabilities:
 **Source Code**
 
 [https://github.com/patniko/models.dino](https://github.com/patniko/models.dino)
+
+## Open Items
+- ⏳ Get CMC samples for Echo and ECG devices
+- ✅ Get AliveCor API access to timeseries data
+- ⏳ Get Eko API access to timeseries data
+- ⏳ Resolve how to timeshift align ECG + Echo signals
+- ⏸️ Parse all echo PDF formats or get structured data access
+- ⏸️ Parse all 12L PDF formats or get structured timeseries data access
+- ⏸️ Collate high quality sample data sets
+- ⏸️ Generate low quality sample data sets
+- ⏳ Validate all echo devices can be pre-processed and asessed for quality
+- ⏸️ Complete small training run on DINO
