@@ -22,7 +22,7 @@ if USE_MLFLOW:
 device = torch.device("cpu")
 video_classification_model = r2plus1d_18(num_classes=1)
 
-data_path = './model_data/failures'
+data_path = './model_data/example_study3'
 model_weights = "./video_quality_model.pt"
 weights = torch.load(model_weights, map_location=torch.device('cpu'))
 video_classification_model.load_state_dict(weights)
@@ -218,7 +218,7 @@ def process_dicoms(INPUT):
                                         representing the video data where N is the number of videos,
                                         ready to be fed into EchoPrime.
     """
-    dicom_paths = glob.glob(f'{INPUT}/**/*.dcm', recursive=True)
+    dicom_paths = glob.glob(f'{INPUT}/**/*', recursive=True)
 
     stack_of_videos = []
     for idx, dicom_path in tqdm(enumerate(dicom_paths), total=len(dicom_paths)):
@@ -226,11 +226,11 @@ def process_dicoms(INPUT):
             # simple dicom_processing
             dcm = pydicom.dcmread(dicom_path)
 
-            print(dcm)
+            # print(dcm)
             pixels = dcm.pixel_array
 
-            print("NDIM: " + str(pixels.ndim))
-            print("SHAPE:" + str(pixels.shape[2]))
+            # print("NDIM: " + str(pixels.ndim))
+            # print("SHAPE:" + str(pixels.shape[2]))
 
             # exclude images like (600,800) or (600,800,3)
             if pixels.ndim < 3: # or pixels.shape[2] == 3:
