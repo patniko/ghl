@@ -21,6 +21,7 @@ from services.datasets import router as datasets_router
 from services.data_quality import router as data_quality_router
 from services.dicom import router as dicom_router
 from services.batches import router as batches_router
+from services.batch_processing import router as batch_processing_router
 from services.catalog import checks_router as check_catalog_router
 from services.catalog import mappings_router as mappings_catalog_router
 from services.catalog import models_router as models_catalog_router
@@ -100,6 +101,8 @@ app.include_router(
 )
 app.include_router(dicom_router, prefix="/dicom/{org_slug}", tags=["dicom"])
 app.include_router(batches_router, prefix="/batches/{org_slug}", tags=["batches"])
+app.include_router(batch_processing_router, prefix="/batches/{org_slug}/processing", tags=["batch-processing"])
+app.include_router(batch_processing_router, prefix="/batches/processing", tags=["batch-processing"])
 app.include_router(
     check_catalog_router, prefix="/{org_slug}/catalog/checks", tags=["catalog"]
 )

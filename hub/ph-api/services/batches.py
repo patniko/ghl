@@ -1,6 +1,7 @@
 import os
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from services.batch_processing import router as batch_processing_router
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
@@ -375,6 +376,8 @@ async def update_batch(
         batch.name = batch_update.name
     if batch_update.description is not None:
         batch.description = batch_update.description
+    if batch_update.processing_status is not None:
+        batch.processing_status = batch_update.processing_status
 
     db.commit()
     db.refresh(batch)
@@ -694,3 +697,4 @@ async def get_batch_quality_summary(
     db.commit()
 
     return quality_summary
+

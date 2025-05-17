@@ -13,6 +13,7 @@ import {
   LayersIcon,
   FilesIcon
 } from 'lucide-react'
+import { BatchProcessingButton } from '@/components/ui/batch-processing-button'
 import { Project } from '@/types/project'
 import { Batch, BatchFile } from '@/types/batch'
 import { projectService } from '@/services/projectService'
@@ -441,6 +442,11 @@ export default function ProjectBatches() {
                   </CardTitle>
                   {currentBatch && (
                     <div className="flex gap-2">
+                      <BatchProcessingButton 
+                        batchId={currentBatch.id} 
+                        orgSlug={orgSlug}
+                        initialStatus={currentBatch.processing_status}
+                      />
                       <Button
                         variant="outline"
                         size="sm"
