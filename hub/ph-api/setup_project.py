@@ -181,7 +181,7 @@ def main():
     print("\nTo start your project, run:")
     print("  docker-compose up -d")
     print("\nTo access your API:")
-    print("  http://localhost:8000")
+    print("  http://localhost:8080")
     print("\nTo access PGAdmin:")
     print(f"  http://localhost:{pgadmin_port}")
     print("  Email: test@test.com")
