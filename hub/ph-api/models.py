@@ -227,6 +227,7 @@ class Batch(Base):
     )
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
+    processing_status = Column(String, nullable=True)  # Batch processing status
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -443,6 +444,14 @@ class ProcessingStatus:
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
+
+# Batch processing status constants
+class BatchProcessingStatus(str, enum.Enum):
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 # File type constants
@@ -757,6 +766,7 @@ class BatchResponse(BaseModel):
     project_id: int | None = None
     name: str
     description: str = None
+    processing_status: str | None = None
     created_at: datetime
     updated_at: datetime
     quality_summary: dict = None
@@ -768,6 +778,7 @@ class BatchUpdate(BaseModel):
     name: str = None
     description: str = None
     project_id: int = None
+    processing_status: str = None
 
 
 class ProjectCreate(BaseModel):

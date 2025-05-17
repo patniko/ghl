@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "fastapi-template"
+name = "ph-api"
 version = "0.1.0"
-description = "A generic FastAPI template with authentication, database, and Kafka integration"
+description = "Progress Hub API"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 package-mode = false
