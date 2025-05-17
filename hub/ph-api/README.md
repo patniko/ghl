@@ -225,32 +225,23 @@ The application uses environment variables for configuration. You can set these 
 
 > **Note:** After running the setup script, all environment variables will be prefixed with your project name in uppercase followed by an underscore (e.g., `MYPROJECT_SQL_HOST` instead of `SQL_HOST`). This prevents conflicts when running multiple projects on the same machine.
 
-Required variables (shown with default prefix `FASTAPITEMPLATE_`):
+### Using the Environment Template (Local Development)
 
-- `FASTAPI_ENV`: Environment (dev, prod)
-- `FASTAPITEMPLATE_SQL_HOST`: PostgreSQL host
-- `FASTAPITEMPLATE_SQL_PORT`: PostgreSQL port
-- `FASTAPITEMPLATE_SQL_USER`: PostgreSQL user
-- `FASTAPITEMPLATE_SQL_PASSWORD`: PostgreSQL password
-- `FASTAPITEMPLATE_SQL_DATABASE`: PostgreSQL database
-- `FASTAPITEMPLATE_REDIS_HOST`: Redis host
-- `FASTAPITEMPLATE_REDIS_PORT`: Redis port
-- `FASTAPITEMPLATE_KAFKA_HOST`: Kafka host
-- `FASTAPITEMPLATE_KAFKA_PORT`: Kafka port
-- `FASTAPITEMPLATE_AUTH_SECRET_KEY`: Secret key for JWT tokens
-- `FASTAPITEMPLATE_AUTH_ALGORITHM`: Algorithm for JWT tokens (e.g., HS256)
-- `FASTAPITEMPLATE_AUTH_ACCESS_TOKEN_EXPIRE_MINUTES`: JWT token expiration in minutes
+A `.env.template` file is provided as a reference for all required and optional environment variables. To set up your environment:
 
-Optional variables:
+1. Copy the template to create your environment-specific files:
+   ```bash
+   cp .env.template .env.dev   # For development
+   cp .env.template .env.prod  # For production
+   ```
 
-- `FASTAPITEMPLATE_ANTHROPIC_API_KEY`: Anthropic API key for LLM integration
-- `FASTAPITEMPLATE_USE_S3_STORAGE`: Set to "true" to use S3 storage instead of local storage
-- `FASTAPITEMPLATE_S3_ACCESS_KEY`: AWS access key ID for S3 access
-- `FASTAPITEMPLATE_S3_SECRET_KEY`: AWS secret access key for S3 access
-- `FASTAPITEMPLATE_S3_BUCKET_US`: S3 bucket name for US region (default: "ph-api-us")
-- `FASTAPITEMPLATE_S3_ENDPOINT_US`: S3 endpoint URL for US region (default: "https://s3.us-east-1.amazonaws.com")
-- `FASTAPITEMPLATE_S3_BUCKET_INDIA`: S3 bucket name for India region (default: "ph-api-india")
-- `FASTAPITEMPLATE_S3_ENDPOINT_INDIA`: S3 endpoint URL for India region (default: "https://s3.ap-south-1.amazonaws.com")
+2. Edit the files to fill in your actual values for each environment.
+
+3. Make sure not to commit your actual `.env.*` files to the repository (they are excluded in `.gitignore`).
+
+#### Production
+
+Use environment variable settings in your preferred cloud provider to keep secrets secure.
 
 ## S3 Storage Configuration
 
