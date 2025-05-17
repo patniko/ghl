@@ -93,6 +93,40 @@ make docker-up # spin up all docker containers and run the migration scripts
 make docker-down # spin docker containers down
 ```
 
+## Combined Commands
+The following commands allow you to run multiple services together:
+
+```shell
+# Run API, Tasks, and UI services together (separate processes)
+make run-all
+
+# Run API with integrated tasks (tasks run within the API process)
+make app-run-with-tasks
+
+# Run API with integrated tasks and UI (fewer processes to manage)
+make run-all-integrated
+```
+
+### Integrated Tasks
+The API server can optionally run the task scheduler within the same process, which simplifies deployment and reduces the number of processes you need to manage. You can enable this feature in two ways:
+
+1. Using the Makefile commands:
+   ```shell
+   make app-run-with-tasks
+   # or
+   make run-all-integrated
+   ```
+
+2. Directly with command-line arguments:
+   ```shell
+   python server.py --enable-tasks
+   ```
+
+This integration allows you to:
+- Reduce the number of processes you need to manage
+- Simplify deployment in production environments
+- Ensure tasks and API are always in sync
+
 ### Testing
 You can run tests using the following command:
 ```shell

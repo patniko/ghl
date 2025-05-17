@@ -1,4 +1,7 @@
 import os
+import sys
+import argparse
+import threading
 from contextlib import asynccontextmanager
 import tomllib
 from pathlib import Path
@@ -8,6 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from middleware import add_large_file_upload_middleware
+from tasks.scheduler import TaskScheduler
 
 from services.organizations import router as organizations_router
 from services.users import router as user_router
@@ -56,13 +60,27 @@ add_large_file_upload_middleware(app, max_upload_size=5 * 1024 * 1024 * 1024)  #
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+# Global variable to hold the task scheduler
+task_scheduler = None
+
 # Scheduler function
 def run_scheduler_thread():
-    """Start the task scheduler in a daemon thread"""
-    # Get enabled tasks from environment configuration
-    # scheduler = TaskScheduler()
-    # scheduler_thread = threading.Thread(target=scheduler.start, daemon=True)
-    # scheduler_thread.start()
+    """Start the task scheduler in a daemon thread if enabled"""
+    global task_scheduler
+    
+    # Check if integrated tasks are enabled
+    if os.environ.get("ENABLE_INTEGRATED_TASKS", "").lower() in ("true", "1", "yes"):
+        from loguru import logger
+        logger.info("Starting integrated task scheduler")
+        
+        # Get enabled tasks from environment configuration
+        task_scheduler = TaskScheduler()
+        scheduler_thread = threading.Thread(target=task_scheduler.start, daemon=True)
+        scheduler_thread.start()
+        logger.info("Integrated task scheduler started")
+    else:
+        # Tasks not enabled, do nothing
+        pass
 
 
 app.include_router(organizations_router, prefix="/orgs", tags=["organizations"])
@@ -184,13 +202,47 @@ async def load_root():
     }
 
 
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description="GHL Progress Hub API Server")
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("PORT", 8080)),
+        help="Port to run the server on",
+    )
+    parser.add_argument(
+        "--enable-tasks",
+        action="store_true",
+        help="Enable integrated task scheduler",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default=None,
+        help="Set the logging level",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    port = os.getenv("PORT") or 8080
+    # Parse command line arguments
+    args = parse_args()
+    
+    # Set environment variables based on arguments
+    if args.enable_tasks:
+        os.environ["ENABLE_INTEGRATED_TASKS"] = "true"
+        print("Integrated tasks enabled")
+    
+    if args.log_level:
+        os.environ["LOG_LEVEL"] = args.log_level
+    
     # Configure Uvicorn with a larger request body size limit (5GB)
     uvicorn.run(
         app,
         host="127.0.0.1",
-        port=int(port),
+        port=args.port,
         limit_concurrency=10,  # Limit concurrent connections for large uploads
         timeout_keep_alive=300,  # Increase keep-alive timeout for large uploads
         # Note: Uvicorn doesn't directly expose a way to set the max request size

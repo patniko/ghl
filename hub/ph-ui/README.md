@@ -58,6 +58,18 @@ Start the server
   pnpm run dev
 ```
 
+## Running with API and Tasks
+
+For a complete development environment, you can run the UI together with the API and task services using the combined commands from the ph-api directory:
+
+```bash
+# From the ph-api directory
+make run-all            # Runs UI, API, and Tasks as separate processes
+make run-all-integrated # Runs UI and API with integrated tasks
+```
+
+These commands will start all necessary services together, making it easier to develop and test the full application stack.
+
 ## Author
 
 Crafted with 🤍 by [@satnaing](https://github.com/satnaing)

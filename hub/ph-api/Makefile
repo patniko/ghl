@@ -56,3 +56,35 @@ tasks-run-prod:
 	poetry run alembic upgrade head
 	echo "Starting task service"
 	poetry run python tasks/main.py
+
+# Combined commands
+run-all:
+	@echo "Starting all services (API, Tasks, and UI)"
+	@echo "Starting Docker services and running migrations..."
+	@make docker-up
+	@echo "Starting UI in background..."
+	@cd ../ph-ui && npm run dev & UI_PID=$$!
+	@echo "Starting Tasks service in background..."
+	@poetry run python tasks/main.py & TASKS_PID=$$!
+	@echo "Starting API server..."
+	@echo "All services started. Press Ctrl+C to stop all services."
+	@poetry run fastapi dev server.py
+	@kill $$UI_PID $$TASKS_PID 2>/dev/null || true
+
+# Run API with integrated tasks
+app-run-with-tasks:
+	@echo "Starting API server with integrated tasks"
+	@make docker-up
+	@poetry run python server.py --enable-tasks
+
+# Run all services with integrated tasks
+run-all-integrated:
+	@echo "Starting all services with integrated tasks (API+Tasks, and UI)"
+	@echo "Starting Docker services and running migrations..."
+	@make docker-up
+	@echo "Starting UI in background..."
+	@cd ../ph-ui && npm run dev & UI_PID=$$!
+	@echo "Starting API server with integrated tasks..."
+	@echo "All services started. Press Ctrl+C to stop all services."
+	@poetry run python server.py --enable-tasks
+	@kill $$UI_PID 2>/dev/null || true
