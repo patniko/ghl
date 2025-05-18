@@ -21,3 +21,4 @@ model_data/
 .ipynb_checkpoints/
 *.pyc
 __MACOSX/._model_data
+test_output/
