@@ -1167,3 +1167,16 @@ class ECGAnalysisResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class SampleDataset(Base):
+    __tablename__ = "sample_datasets"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id: int | None = None
+    name = Column(String, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    num_patients = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

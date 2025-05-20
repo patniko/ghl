@@ -172,6 +172,12 @@ export const sidebarData: SidebarData = {
           url: '/',
           icon: IconShieldCheck,
         },
+        {
+          title: 'Synthetic Sets',
+          url: '/$orgSlug/synthetic-sets',
+          icon: IconDatabase,
+          dynamic: true
+        },
       ],
     },
     /*{

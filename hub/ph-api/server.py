@@ -27,6 +27,7 @@ from services.catalog import mappings_router as mappings_catalog_router
 from services.catalog import models_router as models_catalog_router
 from services.files import router as files_router
 from services.projects import router as projects_router
+from services.samples import router as samples_router
 
 
 @asynccontextmanager
@@ -116,6 +117,7 @@ app.include_router(
 )
 app.include_router(files_router, prefix="/{org_slug}/files", tags=["files"])
 app.include_router(projects_router, prefix="/projects/{org_slug}", tags=["projects"])
+app.include_router(samples_router, prefix="/{org_slug}/samples", tags=["samples-datasets"])
 
 
 # Debug endpoint
