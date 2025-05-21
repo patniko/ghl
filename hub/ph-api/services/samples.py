@@ -22,6 +22,7 @@ from fastapi import (
     File,
     Form,
     Query,
+    Request,
 )
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -30,7 +31,8 @@ from sqlalchemy.orm import Session
 
 from auth import validate_jwt
 from db import get_db
-from models import User, Batch, SampleDataset, Project
+from models import User, Batch, SampleDataset, Organization
+from middleware.auth import get_organization_from_path
 
 # Path to the samples.py script
 SAMPLES_SCRIPT = Path(__file__).parent.parent.parent.parent / "tools" / "samples.py"
@@ -39,7 +41,6 @@ router = APIRouter()
 
 async def generate_samples_dataset(
     dataset_id: int,
-    project_id: int,
     num_patients: int,
     data_types: List[str],
     include_partials: bool,
@@ -186,9 +187,9 @@ async def generate_samples_dataset(
 
 class SampleDatasetCreate(BaseModel):
     name: str
-    description: str = None
+    description: Optional[str] = None
     num_patients: int
-    batch_id: int = None
+    batch_id: Optional[int] = None
     data_types: List[str] = ["questionnaire", "blood", "mobile", "consent", "echo", "ecg"]
     include_partials: bool = False
     partial_rate: float = 0.3
@@ -196,9 +197,9 @@ class SampleDatasetCreate(BaseModel):
 
 class SampleDatasetResponse(BaseModel):
     id: int
-    project_id: int = None
+    organization_id: int
     name: str
-    description: str = None
+    description: Optional[str] = None
     num_patients: int
     created_at: datetime
     # These fields are not in the database model but are included in the response
@@ -212,16 +213,17 @@ class SampleDatasetResponse(BaseModel):
 
 @router.post("/", response_model=SampleDatasetResponse)
 async def create_samples_dataset(
+    request: Request,
     background_tasks: BackgroundTasks,
     name: str = Form(...),
-    description: str = Form(None),
+    description: Optional[str] = Form(None),
     num_patients: int = Form(...),
     data_types: List[str] = Form(["questionnaire", "blood", "mobile", "consent", "echo", "ecg"]),
     include_partials: bool = Form(False),
     partial_rate: float = Form(0.3),
-    batch_id: int = Form(None),
-    project_id: int = Form(None),
+    batch_id: Optional[int] = Form(None),
     current_user: User = Depends(validate_jwt),
+    organization: Organization = Depends(get_organization_from_path),
     db: Session = Depends(get_db),
 ):
     """Create a new synthetic dataset using samples.py"""
@@ -233,15 +235,6 @@ async def create_samples_dataset(
         batch = db.execute(batch_stmt).scalar_one_or_none()
         if not batch:
             raise HTTPException(status_code=404, detail="Batch not found")
-    
-    # Check if project_id is provided and exists
-    if project_id:
-        project_stmt = select(Project).where(
-            Project.id == project_id, Project.user_id == current_user["user_id"]
-        )
-        project = db.execute(project_stmt).scalar_one_or_none()
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
     
     # Validate data types
     valid_data_types = ["questionnaire", "blood", "mobile", "consent", "echo", "ecg", "all"]
@@ -263,7 +256,7 @@ async def create_samples_dataset(
     
     # Create dataset record with only the fields that exist in the simplified model
     new_dataset = SampleDataset(
-        project_id=project_id,
+        organization_id=organization.id,
         name=name,
         description=description,
         num_patients=num_patients,
@@ -277,7 +270,6 @@ async def create_samples_dataset(
     background_tasks.add_task(
         generate_samples_dataset,
         new_dataset.id,
-        project_id or 0,  # Use 0 if project_id is None
         num_patients,
         data_types,
         include_partials,
@@ -289,7 +281,7 @@ async def create_samples_dataset(
     # plus the additional fields we want to include in the response
     response_data = {
         "id": new_dataset.id,
-        "project_id": new_dataset.project_id,
+        "organization_id": new_dataset.organization_id,
         "name": new_dataset.name,
         "description": new_dataset.description,
         "num_patients": new_dataset.num_patients,
@@ -306,14 +298,16 @@ async def create_samples_dataset(
 
 @router.get("/", response_model=List[SampleDatasetResponse])
 async def get_samples_datasets(
+    request: Request,
     current_user: User = Depends(validate_jwt),
+    organization: Organization = Depends(get_organization_from_path),
     db: Session = Depends(get_db),
 ):
     """Get all synthetic datasets for the current user"""
-    # Since we don't have user_id in the simplified model, we'll get all datasets
-    # In a real application, you might want to filter by project_id where the user has access
+    # Filter datasets by organization
     stmt = (
         select(SampleDataset)
+        .where(SampleDataset.organization_id == organization.id)
         .order_by(SampleDataset.created_at.desc())
     )
     
@@ -327,7 +321,7 @@ async def get_samples_datasets(
         # we'll use default values for the additional fields in the response
         response_data = {
             "id": dataset.id,
-            "project_id": dataset.project_id,
+            "organization_id": dataset.organization_id,
             "name": dataset.name,
             "description": dataset.description,
             "num_patients": dataset.num_patients,
@@ -346,13 +340,16 @@ async def get_samples_datasets(
 @router.get("/{dataset_id}", response_model=SampleDatasetResponse)
 async def get_samples_dataset(
     dataset_id: int,
+    request: Request,
     current_user: User = Depends(validate_jwt),
+    organization: Organization = Depends(get_organization_from_path),
     db: Session = Depends(get_db),
 ):
     """Get a specific synthetic dataset"""
-    # Since we don't have user_id in the simplified model, we'll just get the dataset by ID
+    # Get dataset by ID and organization
     stmt = select(SampleDataset).where(
-        SampleDataset.id == dataset_id
+        SampleDataset.id == dataset_id,
+        SampleDataset.organization_id == organization.id
     )
     
     result = db.execute(stmt)
@@ -365,7 +362,7 @@ async def get_samples_dataset(
     # plus default values for the additional fields in the response
     response_data = {
         "id": dataset.id,
-        "project_id": dataset.project_id,
+        "organization_id": dataset.organization_id,
         "name": dataset.name,
         "description": dataset.description,
         "num_patients": dataset.num_patients,
@@ -383,13 +380,16 @@ async def get_samples_dataset(
 @router.delete("/{dataset_id}")
 async def delete_samples_dataset(
     dataset_id: int,
+    request: Request,
     current_user: User = Depends(validate_jwt),
+    organization: Organization = Depends(get_organization_from_path),
     db: Session = Depends(get_db),
 ):
     """Delete a synthetic dataset"""
-    # Since we don't have user_id in the simplified model, we'll just get the dataset by ID
+    # Get dataset by ID and organization
     stmt = select(SampleDataset).where(
-        SampleDataset.id == dataset_id
+        SampleDataset.id == dataset_id,
+        SampleDataset.organization_id == organization.id
     )
     
     result = db.execute(stmt)
@@ -407,13 +407,16 @@ async def delete_samples_dataset(
 @router.get("/{dataset_id}/download")
 async def download_samples_dataset(
     dataset_id: int,
+    request: Request,
     current_user: User = Depends(validate_jwt),
+    organization: Organization = Depends(get_organization_from_path),
     db: Session = Depends(get_db),
 ):
     """Download a synthetic dataset as a zip file"""
-    # Since we don't have user_id in the simplified model, we'll just get the dataset by ID
+    # Get dataset by ID and organization
     stmt = select(SampleDataset).where(
-        SampleDataset.id == dataset_id
+        SampleDataset.id == dataset_id,
+        SampleDataset.organization_id == organization.id
     )
     
     result = db.execute(stmt)
@@ -434,7 +437,7 @@ async def download_samples_dataset(
                 json_path = json_file.name
                 dataset_info = {
                     "id": dataset.id,
-                    "project_id": dataset.project_id,
+                    "organization_id": dataset.organization_id,
                     "name": dataset.name,
                     "description": dataset.description,
                     "num_patients": dataset.num_patients,

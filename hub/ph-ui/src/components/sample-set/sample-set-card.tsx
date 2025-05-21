@@ -1,24 +1,24 @@
-import { SyntheticDataset } from '@/types/synthetic-dataset'
+import { SampleDataset } from '@/types/sample-dataset'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { IconDownload, IconEdit, IconTrash } from '@tabler/icons-react'
 import { formatDistanceToNow } from 'date-fns'
 
-interface SyntheticSetCardProps {
-  dataset: SyntheticDataset
-  onViewDataset: (dataset: SyntheticDataset) => void
-  onEditDataset: (dataset: SyntheticDataset) => void
-  onDeleteDataset: (dataset: SyntheticDataset) => void
-  onDownloadDataset: (dataset: SyntheticDataset) => void
+interface SampleSetCardProps {
+  dataset: SampleDataset
+  onViewDataset: (dataset: SampleDataset) => void
+  onEditDataset: (dataset: SampleDataset) => void
+  onDeleteDataset: (dataset: SampleDataset) => void
+  onDownloadDataset: (dataset: SampleDataset) => void
 }
 
-export function SyntheticSetCard({
+export function SampleSetCard({
   dataset,
   onViewDataset,
   onEditDataset,
   onDeleteDataset,
   onDownloadDataset,
-}: SyntheticSetCardProps) {
+}: SampleSetCardProps) {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">

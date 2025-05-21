@@ -7,11 +7,11 @@ import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
 import { PlusIcon, DatabaseIcon } from 'lucide-react'
-import { SyntheticDataset, SyntheticDatasetCreate, SamplesDatasetCreate } from '@/types/synthetic-dataset'
-import { syntheticDatasetsService } from '@/services/syntheticDatasetsService'
-import { SyntheticSetCard } from '@/components/synthetic-set/synthetic-set-card'
-import { CreateSyntheticSetModal } from '@/components/synthetic-set/create-synthetic-set-modal'
-import { DeleteSyntheticSetDialog } from '@/components/synthetic-set/delete-synthetic-set-dialog'
+import { SampleDataset, SamplesDatasetCreate } from '@/types/sample-dataset'
+import { samplesService } from '@/services/samplesService'
+import { SampleSetCard } from '@/components/sample-set/sample-set-card'
+import { CreateSampleSetModal } from '@/components/sample-set/create-sample-set-modal'
+import { DeleteSampleSetDialog } from '@/components/sample-set/delete-sample-set-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import {
@@ -29,16 +29,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 
-export default function SyntheticSets() {
+export default function SampleSets() {
   const { toast } = useToast()
   const _navigate = useNavigate()
   // Get organization slug from route params
-  const { orgSlug } = useParams({ from: '/_authenticated/$orgSlug/synthetic-sets' })
+  const { orgSlug } = useParams({ from: '/_authenticated/$orgSlug/sample-sets' })
 
   // State for datasets
-  const [datasets, setDatasets] = useState<SyntheticDataset[]>([])
-  const [isLoadingDatasets, setIsLoadingDatasets] = useState(true)
-  const [selectedDataset, setSelectedDataset] = useState<SyntheticDataset | null>(null)
+  const [selectedDataset, setSelectedDataset] = useState<SampleDataset | null>(null)
 
   // State for modals
   const [isCreateDatasetModalOpen, setIsCreateDatasetModalOpen] = useState(false)
@@ -48,35 +46,17 @@ export default function SyntheticSets() {
   const [isCreatingDataset, setIsCreatingDataset] = useState(false)
   const [isDeletingDataset, setIsDeletingDataset] = useState(false)
   const [isLoadingSamplesDatasets, setIsLoadingSamplesDatasets] = useState(true)
-  const [samplesDatasets, setSamplesDatasets] = useState<SyntheticDataset[]>([])
+  const [samplesDatasets, setSamplesDatasets] = useState<SampleDataset[]>([])
 
   // State for filtering and sorting
   const [sort, setSort] = useState('descending')
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Fetch datasets
-  const fetchDatasets = useCallback(async () => {
-    setIsLoadingDatasets(true)
-    try {
-      const data = await syntheticDatasetsService.getDatasets(orgSlug)
-      setDatasets(data)
-    } catch (error) {
-      console.error('Error fetching datasets:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch synthetic datasets',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoadingDatasets(false)
-    }
-  }, [orgSlug, toast])
-  
   // Fetch samples datasets
   const fetchSamplesDatasets = useCallback(async () => {
     setIsLoadingSamplesDatasets(true)
     try {
-      const data = await syntheticDatasetsService.getSamplesDatasets(orgSlug)
+      const data = await samplesService.getSamplesDatasets(orgSlug)
       setSamplesDatasets(data)
     } catch (error) {
       console.error('Error fetching samples datasets:', error)
@@ -92,44 +72,14 @@ export default function SyntheticSets() {
   
   // Fetch datasets on component mount or when orgSlug changes
   useEffect(() => {
-    fetchDatasets()
     fetchSamplesDatasets()
-  }, [fetchDatasets, fetchSamplesDatasets])
+  }, [fetchSamplesDatasets])
 
-  // Create dataset
-  const handleCreateDataset = async (dataset: SyntheticDatasetCreate, file?: File) => {
-    setIsCreatingDataset(true)
-    try {
-      const newDataset = await syntheticDatasetsService.createDataset(dataset, orgSlug)
-      
-      // If a file was provided, upload it
-      if (file) {
-        await syntheticDatasetsService.uploadCsv(newDataset.id, file, orgSlug)
-      }
-      
-      setDatasets((prev) => [newDataset, ...prev])
-      setIsCreateDatasetModalOpen(false)
-      toast({
-        title: 'Success',
-        description: 'Dataset created successfully',
-      })
-    } catch (error) {
-      console.error('Error creating dataset:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to create dataset',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsCreatingDataset(false)
-    }
-  }
-  
   // Create samples dataset
   const handleCreateSamplesDataset = async (dataset: SamplesDatasetCreate) => {
     setIsCreatingDataset(true)
     try {
-      const newDataset = await syntheticDatasetsService.createSamplesDataset(dataset, orgSlug)
+      const newDataset = await samplesService.createSamplesDataset(dataset, orgSlug)
       
       setSamplesDatasets((prev) => [newDataset, ...prev])
       setIsCreateDatasetModalOpen(false)
@@ -155,16 +105,8 @@ export default function SyntheticSets() {
 
     setIsDeletingDataset(true)
     try {
-      // Check if it's a samples dataset
-      const isSamplesDataset = samplesDatasets.some(d => d.id === selectedDataset.id)
-      
-      if (isSamplesDataset) {
-        await syntheticDatasetsService.deleteSamplesDataset(selectedDataset.id, orgSlug)
-        setSamplesDatasets((prev) => prev.filter((dataset) => dataset.id !== selectedDataset.id))
-      } else {
-        await syntheticDatasetsService.deleteDataset(selectedDataset.id, orgSlug)
-        setDatasets((prev) => prev.filter((dataset) => dataset.id !== selectedDataset.id))
-      }
+      await samplesService.deleteSamplesDataset(selectedDataset.id, orgSlug)
+      setSamplesDatasets((prev) => prev.filter((dataset) => dataset.id !== selectedDataset.id))
       
       setIsDeleteDatasetModalOpen(false)
       toast({
@@ -183,58 +125,21 @@ export default function SyntheticSets() {
     }
   }
 
-  // Download dataset as CSV
-  const handleDownloadDataset = async (dataset: SyntheticDataset) => {
+  // Download dataset as ZIP
+  const handleDownloadDataset = async (dataset: SampleDataset) => {
     try {
-      // Check if it's a samples dataset
-      const isSamplesDataset = samplesDatasets.some(d => d.id === dataset.id)
+      // Download samples dataset as zip
+      const blob = await samplesService.downloadSamplesDataset(dataset.id, orgSlug)
       
-      if (isSamplesDataset) {
-        // Download samples dataset as zip
-        const blob = await syntheticDatasetsService.downloadSamplesDataset(dataset.id, orgSlug)
-        
-        // Create download link
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${dataset.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.zip`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      } else {
-        // Get all data (this is a simplified approach - in a real app you might want to handle pagination)
-        const response = await syntheticDatasetsService.getDatasetData(dataset.id, orgSlug, 1, 10000)
-        
-        if (!response.data || response.data.length === 0) {
-          toast({
-            title: 'No data',
-            description: 'This dataset contains no data to download',
-            variant: 'destructive',
-          })
-          return
-        }
-        
-        // Convert to CSV
-        const headers = Object.keys(response.data[0]).join(',')
-        const rows = response.data.map(row => 
-          Object.values(row).map(value => 
-            typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value
-          ).join(',')
-        )
-        const csv = [headers, ...rows].join('\n')
-        
-        // Create download link
-        const blob = new Blob([csv], { type: 'text/csv' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${dataset.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${dataset.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
       
       toast({
         title: 'Success',
@@ -251,7 +156,7 @@ export default function SyntheticSets() {
   }
 
   // Filter and sort datasets
-  const filteredDatasets = [...datasets, ...samplesDatasets]
+  const filteredDatasets = [...samplesDatasets]
     .filter((dataset) => {
       // Filter by search term
       return dataset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -277,9 +182,9 @@ export default function SyntheticSets() {
       <Main>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 space-y-2">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Synthetic Sets</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Sample Sets</h2>
             <p className="text-muted-foreground">
-              Create and manage synthetic datasets for testing and development
+              Create and manage sample datasets for testing and development
             </p>
           </div>
           <Button
@@ -326,7 +231,7 @@ export default function SyntheticSets() {
 
         <Separator className="shadow" />
 
-        {isLoadingDatasets || isLoadingSamplesDatasets ? (
+        {isLoadingSamplesDatasets ? (
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-[200px] w-full" />
@@ -337,7 +242,7 @@ export default function SyntheticSets() {
             <DatabaseIcon className="mb-4 h-12 w-12 text-muted-foreground" />
             <h3 className="mb-2 text-lg font-medium">No datasets found</h3>
             <p className="mb-4 text-sm text-muted-foreground">
-              Create your first synthetic dataset to start generating test data
+              Create your first sample dataset to start generating test data
             </p>
             <Button
               onClick={() => setIsCreateDatasetModalOpen(true)}
@@ -350,7 +255,7 @@ export default function SyntheticSets() {
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredDatasets.map((dataset) => (
-              <SyntheticSetCard
+              <SampleSetCard
                 key={dataset.id}
                 dataset={dataset}
                 onViewDataset={(dataset) => {
@@ -379,15 +284,15 @@ export default function SyntheticSets() {
       </Main>
 
       {/* Modals */}
-      <CreateSyntheticSetModal
+      <CreateSampleSetModal
         isOpen={isCreateDatasetModalOpen}
         onClose={() => setIsCreateDatasetModalOpen(false)}
-        onCreateDataset={handleCreateDataset}
+        _onCreateDataset={() => Promise.resolve()} // Dummy function since we only use samples datasets
         onCreateSamplesDataset={handleCreateSamplesDataset}
         isLoading={isCreatingDataset}
       />
 
-      <DeleteSyntheticSetDialog
+      <DeleteSampleSetDialog
         isOpen={isDeleteDatasetModalOpen}
         onClose={() => setIsDeleteDatasetModalOpen(false)}
         onConfirm={handleDeleteDataset}

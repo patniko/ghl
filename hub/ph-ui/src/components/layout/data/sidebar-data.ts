@@ -173,8 +173,8 @@ export const sidebarData: SidebarData = {
           icon: IconShieldCheck,
         },
         {
-          title: 'Synthetic Sets',
-          url: '/$orgSlug/synthetic-sets',
+          title: 'Sample Sets',
+          url: '/$orgSlug/sample-sets',
           icon: IconDatabase,
           dynamic: true
         },

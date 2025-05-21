@@ -1,7 +1,7 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 
-interface DeleteSyntheticSetDialogProps {
+interface DeleteSampleSetDialogProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: () => Promise<void>
@@ -10,14 +10,14 @@ interface DeleteSyntheticSetDialogProps {
   isLoading: boolean
 }
 
-export function DeleteSyntheticSetDialog({
+export function DeleteSampleSetDialog({
   isOpen,
   onClose,
   onConfirm,
   title,
   description,
   isLoading,
-}: DeleteSyntheticSetDialogProps) {
+}: DeleteSampleSetDialogProps) {
   const handleConfirm = async () => {
     try {
       await onConfirm()
