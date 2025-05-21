@@ -244,10 +244,10 @@ def create_token_response(
 
 
 # Custom clients and settings
-twilio_client = Client(
-    get_settings().twilio_client_id, get_settings().twilio_client_key
-)
-twilio_verify = twilio_client.verify.services(get_settings().twilio_verify)
+# twilio_client = Client(
+#     get_settings().twilio_client_id, get_settings().twilio_client_key
+# )
+# twilio_verify = twilio_client.verify.services(get_settings().twilio_verify)
 
 MAX_AVATAR_FILE_SIZE = 1 * 1024 * 1024  # 1MB
 MAX_AVATAR_IMAGE_SIZE = (300, 300)

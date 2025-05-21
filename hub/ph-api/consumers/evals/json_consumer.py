@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from db import SessionLocal
 from models import File as FileModel, ProcessingStatus, FileType, Project, ECGAnalysis
-from services.mobile_ecg import ECGProcessor
 from services.storage import get_storage_backend
 
 
@@ -79,60 +78,60 @@ async def process_json_file(file_id: int, user_id: int):
                 return
 
             # Process the ECG data using ECGProcessor
-            processor = ECGProcessor()
-            analysis_results = processor.analyze_ecg(ecg_data)
+            # processor = ECGProcessor()
+            # analysis_results = processor.analyze_ecg(ecg_data)
 
-            # Get detailed neurokit2 analysis
-            detailed_analysis = processor.analyze_ecg_with_neurokit(ecg_data)
+            # # Get detailed neurokit2 analysis
+            # detailed_analysis = processor.analyze_ecg_with_neurokit(ecg_data)
 
-            # Create ECGAnalysis record
-            ecg_analysis = ECGAnalysis(
-                file_id=file.id,
-                has_missing_leads=detailed_analysis["has_missing_leads"],
-                signal_noise_ratio=detailed_analysis["signal_noise_ratio"],
-                baseline_wander_score=detailed_analysis["baseline_wander_score"],
-                motion_artifact_score=detailed_analysis["motion_artifact_score"],
-                rr_interval_mean=detailed_analysis["rr_interval_mean"],
-                rr_interval_stddev=detailed_analysis["rr_interval_stddev"],
-                rr_interval_consistency=detailed_analysis["rr_interval_consistency"],
-                qrs_count=detailed_analysis["qrs_count"],
-                qrs_detection_confidence=detailed_analysis["qrs_detection_confidence"],
-                hrv_sdnn=detailed_analysis["hrv_sdnn"],
-                hrv_rmssd=detailed_analysis["hrv_rmssd"],
-                hrv_pnn50=detailed_analysis["hrv_pnn50"],
-                hrv_lf=detailed_analysis["hrv_lf"],
-                hrv_hf=detailed_analysis["hrv_hf"],
-                hrv_lf_hf_ratio=detailed_analysis["hrv_lf_hf_ratio"],
-                frequency_peak=detailed_analysis["frequency_peak"],
-                frequency_power_vlf=detailed_analysis["frequency_power_vlf"],
-                frequency_power_lf=detailed_analysis["frequency_power_lf"],
-                frequency_power_hf=detailed_analysis["frequency_power_hf"],
-            )
-            db.add(ecg_analysis)
+            # # Create ECGAnalysis record
+            # ecg_analysis = ECGAnalysis(
+            #     file_id=file.id,
+            #     has_missing_leads=detailed_analysis["has_missing_leads"],
+            #     signal_noise_ratio=detailed_analysis["signal_noise_ratio"],
+            #     baseline_wander_score=detailed_analysis["baseline_wander_score"],
+            #     motion_artifact_score=detailed_analysis["motion_artifact_score"],
+            #     rr_interval_mean=detailed_analysis["rr_interval_mean"],
+            #     rr_interval_stddev=detailed_analysis["rr_interval_stddev"],
+            #     rr_interval_consistency=detailed_analysis["rr_interval_consistency"],
+            #     qrs_count=detailed_analysis["qrs_count"],
+            #     qrs_detection_confidence=detailed_analysis["qrs_detection_confidence"],
+            #     hrv_sdnn=detailed_analysis["hrv_sdnn"],
+            #     hrv_rmssd=detailed_analysis["hrv_rmssd"],
+            #     hrv_pnn50=detailed_analysis["hrv_pnn50"],
+            #     hrv_lf=detailed_analysis["hrv_lf"],
+            #     hrv_hf=detailed_analysis["hrv_hf"],
+            #     hrv_lf_hf_ratio=detailed_analysis["hrv_lf_hf_ratio"],
+            #     frequency_peak=detailed_analysis["frequency_peak"],
+            #     frequency_power_vlf=detailed_analysis["frequency_power_vlf"],
+            #     frequency_power_lf=detailed_analysis["frequency_power_lf"],
+            #     frequency_power_hf=detailed_analysis["frequency_power_hf"],
+            # )
+            # db.add(ecg_analysis)
 
             # Update file metadata with analysis results
-            file.file_metadata = {"ecg_analysis": analysis_results}
-            file.processing_status = ProcessingStatus.COMPLETED
-            file.processing_results = {
-                "message": "AliveCor ECG file processed successfully",
-                "is_alivecor": True,
-                "analysis_summary": {
-                    "heart_rate": analysis_results.get("heart_rate"),
-                    "rhythm": analysis_results.get("analysis", {}).get("rhythm"),
-                    "abnormalities": analysis_results.get("analysis", {}).get(
-                        "abnormalities", []
-                    ),
-                    "signal_quality": {
-                        "signal_noise_ratio": detailed_analysis["signal_noise_ratio"],
-                        "baseline_wander": detailed_analysis["baseline_wander_score"],
-                        "motion_artifacts": detailed_analysis["motion_artifact_score"],
-                        "missing_leads": detailed_analysis["has_missing_leads"],
-                    },
-                },
-            }
-            file.processed_at = datetime.now(UTC)
-            file.schema_type = "alivecor"
-            db.commit()
+            #file.file_metadata = {"ecg_analysis": analysis_results}
+            # file.processing_status = ProcessingStatus.COMPLETED
+            # file.processing_results = {
+            #     "message": "AliveCor ECG file processed successfully",
+            #     "is_alivecor": True,
+            #     "analysis_summary": {
+            #         "heart_rate": analysis_results.get("heart_rate"),
+            #         "rhythm": analysis_results.get("analysis", {}).get("rhythm"),
+            #         "abnormalities": analysis_results.get("analysis", {}).get(
+            #             "abnormalities", []
+            #         ),
+            #         "signal_quality": {
+            #             "signal_noise_ratio": detailed_analysis["signal_noise_ratio"],
+            #             "baseline_wander": detailed_analysis["baseline_wander_score"],
+            #             "motion_artifacts": detailed_analysis["motion_artifact_score"],
+            #             "missing_leads": detailed_analysis["has_missing_leads"],
+            #         },
+            #     },
+            # }
+            # file.processed_at = datetime.now(UTC)
+            # file.schema_type = "alivecor"
+            # db.commit()
 
             logger.info(f"Successfully processed AliveCor ECG file: {file_id}")
 

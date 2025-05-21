@@ -9,8 +9,6 @@ from sqlalchemy import select
 
 from db import SessionLocal
 from models import File, ProcessingStatus, FileType, Check, DataType, Project
-from services.catalog.checks.catalog import infer_column_data_type
-from services.catalog.mappings.llm_mapping import analyze_dataset_columns_with_llm
 from services.storage import get_storage_backend
 
 

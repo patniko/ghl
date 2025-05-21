@@ -60,7 +60,6 @@ class Organization(Base):
     column_mappings = relationship("ColumnMapping", back_populates="organization")
     files = relationship("File", back_populates="organization")
     dicom_files = relationship("DicomFile", back_populates="organization")
-    synthetic_datasets = relationship("SyntheticDataset", back_populates="organization")
     projects = relationship("Project", back_populates="organization")
 
 
@@ -286,38 +285,6 @@ class Project(Base):
     organization = relationship("Organization", back_populates="projects")
     files = relationship("File", back_populates="project")
     batches = relationship("Batch", back_populates="project")
-
-
-class SyntheticDataset(Base):
-    __tablename__ = "synthetic_datasets"
-    id = Column(Integer, primary_key=True, index=True)
-    organization_id = Column(
-        Integer,
-        ForeignKey("organizations.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    batch_id = Column(
-        Integer, ForeignKey("batches.id", ondelete="CASCADE"), nullable=True, index=True
-    )
-    name = Column(String, nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    num_patients = Column(Integer, nullable=False)
-    data = Column(JSON, nullable=True)  # Store the actual dataset
-    column_mappings = Column(JSON, nullable=True)  # Maps columns to check types
-    applied_checks = Column(JSON, nullable=True)  # Stores which checks were applied
-    check_results = Column(JSON, nullable=True)  # Results of applied checks
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-
-    # Relationships
-    organization = relationship("Organization", back_populates="synthetic_datasets")
-
 
 ###
 # Check Catalog
@@ -825,39 +792,6 @@ class ProjectUpdate(BaseModel):
             )
         return v
 
-
-class SyntheticDatasetCreate(BaseModel):
-    name: str
-    description: str = None
-    num_patients: int
-    batch_id: int = None
-
-
-class SyntheticDatasetResponse(BaseModel):
-    id: int
-    organization_id: int
-    user_id: int
-    name: str
-    description: str = None
-    num_patients: int
-    batch_id: int = None
-    column_mappings: dict = None
-    applied_checks: dict = None
-    check_results: dict = None
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class SyntheticDatasetUpdate(BaseModel):
-    name: str = None
-    description: str = None
-    batch_id: int = None
-    column_mappings: dict = None
-    applied_checks: dict = None
-
-
 class CheckCreate(BaseModel):
     name: str
     description: str = None
@@ -983,72 +917,6 @@ class ModelEvaluationResponse(BaseModel):
     reason: Optional[str] = None
     evaluation_results: Optional[Dict[str, Any]] = None
 
-
-class SyntheticPatient(BaseModel):
-    patient_ngsci_id: str
-    year: int
-    verbal_consent: str
-    age: int
-    sex: str
-    bp: str
-    bp_systolic: float
-    bp_diastolic: float
-    pulse: str
-    pulse_entry: float
-    resp_rate: str
-    resp_rate_entry: float
-    spo2: str
-    spo2_entry: float
-    rbs: str
-    rbs_entry: float
-    height: str
-    height_entry: float
-    weight: str
-    weight_entry: float
-    midarm_circum: str
-    midarm_circum_entry: float
-    waist_circum: str
-    waist_circum_entry: float
-    hip_circum: str
-    hip_circum_entry: float
-    endurance_test: str
-    endurance_test_entry: float
-    grip_left: str
-    grip_left_entry: float
-    grip_right: str
-    grip_right_entry: float
-    tonometry_lefteye: str
-    tonometry_lefteye_entry: float
-    tonometry_righteye: str
-    tonometry_righteye_entry: float
-    fundus_lefteye: str
-    fundus_lefteye_obs: str = None
-    fundus_righteye: str
-    fundus_righteye_obs: str = None
-    cognition_sf: str
-    cognition_sf_score: float
-    cognit_impaired: int
-    Hb: float
-    HbA1c: float
-    triglycerides_mg_dl: float
-    tot_cholesterol_mg_dl: float
-    HDL_mg_dl: float
-    LDL_mg_dl: float
-    VLDL_mg_dl: float
-    totchol_by_hdl_ratio: float
-    ldl_by_hdl_ratio: float
-    creatinine_mg_dl: float
-    literate: str
-    smoking_1: str
-    smoking_2: str = None
-    smoking_3: str
-    phq_1: str
-    phq_2: str
-    phq_3: str
-    phq_4: str
-    direct_lonely: str
-
-
 # DICOM Pydantic Models
 class DicomFileCreate(BaseModel):
     filename: str
@@ -1172,7 +1040,12 @@ class ECGAnalysisResponse(BaseModel):
 class SampleDataset(Base):
     __tablename__ = "sample_datasets"
     id = Column(Integer, primary_key=True, index=True)
-    project_id: int | None = None
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
     num_patients = Column(Integer, nullable=False)

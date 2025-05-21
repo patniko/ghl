@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from db import get_db
-from models import Organization, User, Batch, File, DicomFile, SyntheticDataset, Model
+from models import Organization, User, Batch, File, DicomFile, Model
 from auth import create_access_token
 
 
@@ -46,11 +46,6 @@ def setup_test_organization(db: Session, slug: str = None):
             db.execute(
                 text(
                     f"DELETE FROM dicom_files WHERE organization_id = {existing_org.id}"
-                )
-            )
-            db.execute(
-                text(
-                    f"DELETE FROM synthetic_datasets WHERE organization_id = {existing_org.id}"
                 )
             )
             db.execute(
@@ -131,9 +126,6 @@ def teardown_test_organization(db: Session, slug: str):
             db.execute(text(f"DELETE FROM files WHERE organization_id = {org.id}"))
             db.execute(
                 text(f"DELETE FROM dicom_files WHERE organization_id = {org.id}")
-            )
-            db.execute(
-                text(f"DELETE FROM synthetic_datasets WHERE organization_id = {org.id}")
             )
             # Delete user-organization relationships
             db.execute(
@@ -286,40 +278,6 @@ def create_test_model(
     db.commit()
     db.refresh(model)
     return model
-
-
-def create_test_synthetic_dataset(
-    db: Session, user_id: int, org_id: int, batch_id: int
-):
-    """
-    Create a test synthetic dataset for the specified batch.
-
-    Args:
-        db: Database session
-        user_id: User ID
-        org_id: Organization ID
-        batch_id: Batch ID
-
-    Returns:
-        Created SyntheticDataset object
-    """
-    dataset = SyntheticDataset(
-        organization_id=org_id,
-        user_id=user_id,
-        batch_id=batch_id,
-        name="Test Dataset",
-        description="Test dataset description",
-        num_patients=100,
-        data={"patients": []},
-        column_mappings={},
-        applied_checks={},
-        check_results={},
-    )
-    db.add(dataset)
-    db.commit()
-    db.refresh(dataset)
-    return dataset
-
 
 def create_test_dicom_file(
     db: Session, user_id: int, org_id: int, batch_instance_uid: str

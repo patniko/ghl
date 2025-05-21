@@ -2,7 +2,7 @@ from datetime import datetime
 from pytest import Session
 
 from db import get_db
-from models import User, Batch, SyntheticDataset, DicomFile, File, Organization
+from models import User, Batch, DicomFile, File, Organization
 from auth import create_access_token
 
 from tests.test_factory import create_test_client
@@ -85,14 +85,6 @@ def teardown_test_user_and_org(db: Session, user_id: int, org_id: int):
             db.delete(dicom_file)
         db.flush()
 
-        # Delete synthetic datasets
-        datasets = (
-            db.query(SyntheticDataset).filter(SyntheticDataset.user_id == user_id).all()
-        )
-        for dataset in datasets:
-            db.delete(dataset)
-        db.flush()
-
         # Now delete batches
         batches = db.query(Batch).filter(Batch.user_id == user_id).all()
         for batch in batches:
@@ -118,7 +110,6 @@ def teardown_test_user_and_org(db: Session, user_id: int, org_id: int):
         try:
             db.execute(f"DELETE FROM dicom_files WHERE user_id = {user_id}")
             db.execute(f"DELETE FROM files WHERE user_id = {user_id}")
-            db.execute(f"DELETE FROM synthetic_datasets WHERE user_id = {user_id}")
             db.execute(f"DELETE FROM batches WHERE user_id = {user_id}")
             db.execute(f"DELETE FROM users WHERE id = {user_id}")
             db.execute(f"DELETE FROM organizations WHERE id = {org_id}")
@@ -146,27 +137,6 @@ def create_test_batch(db: Session, user_id: int, org_id: int, name: str = "Test 
     db.commit()
     db.refresh(batch)
     return batch
-
-
-def create_test_dataset(db: Session, user_id: int, org_id: int, batch_id: int):
-    """Create a test synthetic dataset for the specified batch"""
-    dataset = SyntheticDataset(
-        organization_id=org_id,
-        user_id=user_id,
-        batch_id=batch_id,
-        name="Test Dataset",
-        description="Test dataset description",
-        num_patients=100,
-        data={"patients": []},
-        column_mappings={},
-        applied_checks={},
-        check_results={},
-    )
-    db.add(dataset)
-    db.commit()
-    db.refresh(dataset)
-    return dataset
-
 
 def create_test_dicom_file(
     db: Session, user_id: int, org_id: int, batch_instance_uid: str
@@ -578,28 +548,6 @@ def test_get_batch_quality_summary():
 
         # Create batch and dataset with check results
         batch = create_test_batch(db, user.id, org.id)
-
-        # Create dataset with check results
-        dataset = SyntheticDataset(
-            organization_id=org.id,
-            user_id=user.id,
-            batch_id=batch.id,
-            name="Test Dataset",
-            description="Test dataset description",
-            num_patients=100,
-            data={"patients": []},
-            column_mappings={},
-            applied_checks={},
-            check_results={
-                "age": {
-                    "range_check": {"min": 0, "max": 100, "out_of_range_count": 5},
-                    "missing_check": {"missing_count": 2},
-                },
-                "sex": {"categorical_check": {"error": "Invalid values found"}},
-            },
-        )
-        db.add(dataset)
-        db.commit()
 
         # Get quality summary
         response = client.get(

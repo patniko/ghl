@@ -17,14 +17,8 @@ from services.organizations import router as organizations_router
 from services.users import router as user_router
 from services.webhooks import router as webhooks_router
 from services.notifications import router as notifications_router
-from services.datasets import router as datasets_router
-from services.data_quality import router as data_quality_router
-from services.dicom import router as dicom_router
 from services.batches import router as batches_router
 from services.batch_processing import router as batch_processing_router
-from services.catalog import checks_router as check_catalog_router
-from services.catalog import mappings_router as mappings_catalog_router
-from services.catalog import models_router as models_catalog_router
 from services.files import router as files_router
 from services.projects import router as projects_router
 from services.samples import router as samples_router
@@ -96,85 +90,12 @@ app.include_router(
 # Users are independent and not organization-scoped
 app.include_router(user_router, prefix="/users", tags=["users"])
 
-app.include_router(datasets_router, prefix="/datasets/{org_slug}", tags=["datasets"])
-app.include_router(
-    data_quality_router, prefix="/data-quality/{org_slug}", tags=["data-quality"]
-)
-app.include_router(dicom_router, prefix="/dicom/{org_slug}", tags=["dicom"])
 app.include_router(batches_router, prefix="/batches/{org_slug}", tags=["batches"])
 app.include_router(batch_processing_router, prefix="/batches/{org_slug}/processing", tags=["batch-processing"])
 app.include_router(batch_processing_router, prefix="/batches/processing", tags=["batch-processing"])
-app.include_router(
-    check_catalog_router, prefix="/{org_slug}/catalog/checks", tags=["catalog"]
-)
-app.include_router(
-    mappings_catalog_router,
-    prefix="/{org_slug}/catalog/mappings",
-    tags=["catalog"],
-)
-app.include_router(
-    models_catalog_router, prefix="/{org_slug}/catalog/models", tags=["catalog"]
-)
 app.include_router(files_router, prefix="/{org_slug}/files", tags=["files"])
 app.include_router(projects_router, prefix="/projects/{org_slug}", tags=["projects"])
-app.include_router(samples_router, prefix="/{org_slug}/samples", tags=["samples-datasets"])
-
-
-# Debug endpoint
-@app.get("/debug/dicom-batches")
-async def debug_dicom_batches():
-    """Debug endpoint to check DICOM batches and their associations"""
-    from sqlalchemy import select
-    from db import SessionLocal
-    from models import DicomBatch, DicomFile, Batch
-
-    db = SessionLocal()
-    try:
-        # Get all DICOM batches
-        dicom_batches_stmt = select(DicomBatch)
-        dicom_batches_result = db.execute(dicom_batches_stmt)
-        dicom_batches = dicom_batches_result.scalars().all()
-
-        # Get all DICOM files
-        dicom_files_stmt = select(DicomFile)
-        dicom_files_result = db.execute(dicom_files_stmt)
-        dicom_files = dicom_files_result.scalars().all()
-
-        # Get all batches
-        batches_stmt = select(Batch)
-        batches_result = db.execute(batches_stmt)
-        batches = batches_result.scalars().all()
-
-        return {
-            "dicom_batches_count": len(dicom_batches),
-            "dicom_batches": [
-                {
-                    "id": dicom_batch.id,
-                    "batch_instance_uid": dicom_batch.batch_instance_uid,
-                    "batch_id": dicom_batch.batch_id,
-                    "user_id": dicom_batch.user_id,
-                }
-                for dicom_batch in dicom_batches
-            ],
-            "dicom_files_count": len(dicom_files),
-            "dicom_files": [
-                {
-                    "id": dicom_file.id,
-                    "original_filename": dicom_file.original_filename,
-                    "batch_instance_uid": dicom_file.batch_instance_uid,
-                    "user_id": dicom_file.user_id,
-                }
-                for dicom_file in dicom_files
-            ],
-            "batches_count": len(batches),
-            "batches": [
-                {"id": batch.id, "name": batch.name, "user_id": batch.user_id}
-                for batch in batches
-            ],
-        }
-    finally:
-        db.close()
-
+app.include_router(samples_router, prefix="/{org_slug}/samples", tags=["samples"])
 
 # Load version and name from pyproject.toml
 def get_project_metadata():
