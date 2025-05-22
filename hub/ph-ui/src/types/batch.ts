@@ -7,6 +7,7 @@ export interface Batch {
   organization_id: number
   user_id: number
   status: string
+  processing_status?: string
   quality_summary?: QualitySummary
   project_id?: number
 }
@@ -21,6 +22,7 @@ export interface BatchUpdate {
   name?: string
   description?: string
   status?: string
+  processing_status?: string
 }
 
 export interface BatchFile {
@@ -54,4 +56,17 @@ export interface QualitySummary {
     warning: number
     info: number
   }
+}
+
+export interface BatchProcessingStatus {
+  status: string
+  is_processing: boolean
+  batch_id: number
+  message?: string
+}
+
+export interface BatchProcessingResponse {
+  status: string
+  message: string
+  batch_id: number
 }

@@ -14,7 +14,7 @@ export const sidebarData: SidebarData = {
   },
   teams: [
     {
-      name: 'Shadcn Admin',
+      name: 'Progress Hub',
       logo: Command,
       plan: 'Vite + ShadcnUI',
     },
@@ -171,6 +171,12 @@ export const sidebarData: SidebarData = {
           title: 'Checks',
           url: '/',
           icon: IconShieldCheck,
+        },
+        {
+          title: 'Sample Sets',
+          url: '/$orgSlug/sample-sets',
+          icon: IconDatabase,
+          dynamic: true
         },
       ],
     },

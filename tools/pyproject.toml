@@ -1,0 +1,22 @@
+[project]
+name = "ghl-tools"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Patrick Nikoletich",email = "patrick@isolated.dev"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydicom (>=3.0.1,<4.0.0)",
+    "torch (>=2.7.0,<3.0.0)",
+    "opencv-python (>=4.11.0.86,<5.0.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "ghl"}]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

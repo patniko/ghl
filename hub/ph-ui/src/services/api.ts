@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 
 // Create an axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // Replace with your FastAPI server URL
+  baseURL: 'http://localhost:8080', // Replace with your FastAPI server URL
 });
 
 // Authentication services

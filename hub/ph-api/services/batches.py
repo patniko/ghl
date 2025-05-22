@@ -1,6 +1,7 @@
 import os
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from services.batch_processing import router as batch_processing_router
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,6 @@ from models import (
     BatchCreate,
     BatchResponse,
     BatchUpdate,
-    SyntheticDataset,
     DicomFile,
     File,
     FileResponse,
@@ -44,15 +44,7 @@ async def get_batch_statistics(
     total_batches = db.execute(batches_stmt).scalar() or 0
 
     # Get total number of datasets
-    datasets_stmt = (
-        select(func.count())
-        .select_from(SyntheticDataset)
-        .where(
-            SyntheticDataset.organization_id == organization.id,
-            SyntheticDataset.user_id == current_user["user_id"],
-        )
-    )
-    total_datasets = db.execute(datasets_stmt).scalar() or 0
+
 
     # Get total number of DICOM batches
     total_dicom_batches = 0
@@ -82,7 +74,7 @@ async def get_batch_statistics(
 
     return {
         "totalBatches": total_batches,
-        "totalDatasets": total_datasets,
+        "totalDatasets": 0,
         "totalDicomBatches": total_dicom_batches,
         "totalDicomFiles": total_dicom_files,
         "dataQuality": data_quality,
@@ -375,6 +367,8 @@ async def update_batch(
         batch.name = batch_update.name
     if batch_update.description is not None:
         batch.description = batch_update.description
+    if batch_update.processing_status is not None:
+        batch.processing_status = batch_update.processing_status
 
     db.commit()
     db.refresh(batch)
@@ -470,45 +464,6 @@ async def delete_batch(
     db.commit()
 
     return {"message": "Batch deleted successfully"}
-
-
-@router.get("/{batch_id}/datasets")
-async def get_batch_datasets(
-    batch_id: int,
-    organization: Organization = Depends(validate_user_organization),
-    current_user: User = Depends(validate_jwt),
-    db: Session = Depends(get_db),
-):
-    """Get all datasets associated with a batch"""
-    # First check if the batch exists and belongs to the user and organization
-    batch_stmt = select(Batch).where(
-        Batch.id == batch_id,
-        Batch.organization_id == organization.id,
-        Batch.user_id == current_user["user_id"],
-    )
-
-    batch_result = db.execute(batch_stmt)
-    batch = batch_result.scalar_one_or_none()
-
-    if not batch:
-        raise HTTPException(status_code=404, detail="Batch not found")
-
-    # Get all datasets for this batch
-    datasets_stmt = (
-        select(SyntheticDataset)
-        .where(
-            SyntheticDataset.batch_id == batch_id,
-            SyntheticDataset.organization_id == organization.id,
-            SyntheticDataset.user_id == current_user["user_id"],
-        )
-        .order_by(SyntheticDataset.created_at.desc())
-    )
-
-    datasets_result = db.execute(datasets_stmt)
-    datasets = datasets_result.scalars().all()
-
-    return datasets
-
 
 @router.get("/{batch_id}/files", response_model=List[FileResponse])
 async def get_batch_files(
@@ -622,75 +577,3 @@ async def create_new_batch_for_project(
         print(f"Error creating batch folder: {str(e)}")
 
     return new_batch
-
-
-@router.get("/{batch_id}/quality-summary")
-async def get_batch_quality_summary(
-    batch_id: int,
-    organization: Organization = Depends(validate_user_organization),
-    current_user: User = Depends(validate_jwt),
-    db: Session = Depends(get_db),
-):
-    """Get quality summary for a batch"""
-    # First check if the batch exists and belongs to the user and organization
-    batch_stmt = select(Batch).where(
-        Batch.id == batch_id,
-        Batch.organization_id == organization.id,
-        Batch.user_id == current_user["user_id"],
-    )
-
-    batch_result = db.execute(batch_stmt)
-    batch = batch_result.scalar_one_or_none()
-
-    if not batch:
-        raise HTTPException(status_code=404, detail="Batch not found")
-
-    # Get all datasets for this batch
-    datasets_stmt = select(SyntheticDataset).where(
-        SyntheticDataset.batch_id == batch_id,
-        SyntheticDataset.organization_id == organization.id,
-        SyntheticDataset.user_id == current_user["user_id"],
-    )
-
-    datasets_result = db.execute(datasets_stmt)
-    datasets = datasets_result.scalars().all()
-
-    # Aggregate quality metrics from all datasets
-    quality_summary = {
-        "total_datasets": len(datasets),
-        "total_checks": 0,
-        "checks_by_type": {},
-        "issues_by_severity": {"info": 0, "warning": 0, "error": 0},
-    }
-
-    for dataset in datasets:
-        if dataset.check_results:
-            # Count total checks
-            for column, checks in dataset.check_results.items():
-                quality_summary["total_checks"] += len(checks)
-
-                # Count checks by type
-                for check_name in checks.keys():
-                    if check_name not in quality_summary["checks_by_type"]:
-                        quality_summary["checks_by_type"][check_name] = 0
-                    quality_summary["checks_by_type"][check_name] += 1
-
-            # Count issues by severity (this would require additional logic based on check results)
-            # For now, we'll just use placeholder logic
-            for column, checks in dataset.check_results.items():
-                for check_name, results in checks.items():
-                    if "error" in results:
-                        quality_summary["issues_by_severity"]["error"] += 1
-                    elif (
-                        "out_of_range_count" in results
-                        and results["out_of_range_count"] > 0
-                    ):
-                        quality_summary["issues_by_severity"]["warning"] += 1
-                    elif "missing_count" in results and results["missing_count"] > 0:
-                        quality_summary["issues_by_severity"]["info"] += 1
-
-    # Update the batch's quality summary
-    batch.quality_summary = quality_summary
-    db.commit()
-
-    return quality_summary

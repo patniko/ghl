@@ -67,6 +67,9 @@ const AuthenticatedSettingsAppearanceLazyImport = createFileRoute(
 const AuthenticatedSettingsAccountLazyImport = createFileRoute(
   '/_authenticated/settings/account',
 )()
+const AuthenticatedOrgSlugSampleSetsLazyImport = createFileRoute(
+  '/_authenticated/$orgSlug/sample-sets',
+)()
 const AuthenticatedOrgSlugProjectsLazyImport = createFileRoute(
   '/_authenticated/$orgSlug/projects',
 )()
@@ -305,6 +308,17 @@ const AuthenticatedSettingsAccountLazyRoute =
     ),
   )
 
+const AuthenticatedOrgSlugSampleSetsLazyRoute =
+  AuthenticatedOrgSlugSampleSetsLazyImport.update({
+    id: '/$orgSlug/sample-sets',
+    path: '/$orgSlug/sample-sets',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any).lazy(() =>
+    import('./routes/_authenticated/$orgSlug/sample-sets.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
 const AuthenticatedOrgSlugProjectsLazyRoute =
   AuthenticatedOrgSlugProjectsLazyImport.update({
     id: '/$orgSlug/projects',
@@ -498,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrgSlugProjectsLazyImport
       parentRoute: typeof AuthenticatedRouteImport
     }
+    '/_authenticated/$orgSlug/sample-sets': {
+      id: '/_authenticated/$orgSlug/sample-sets'
+      path: '/$orgSlug/sample-sets'
+      fullPath: '/$orgSlug/sample-sets'
+      preLoaderRoute: typeof AuthenticatedOrgSlugSampleSetsLazyImport
+      parentRoute: typeof AuthenticatedRouteImport
+    }
     '/_authenticated/settings/account': {
       id: '/_authenticated/settings/account'
       path: '/account'
@@ -673,6 +694,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedOrgSlugProjectNameLazyRoute: typeof AuthenticatedOrgSlugProjectNameLazyRouteWithChildren
   AuthenticatedOrgSlugProjectsLazyRoute: typeof AuthenticatedOrgSlugProjectsLazyRoute
+  AuthenticatedOrgSlugSampleSetsLazyRoute: typeof AuthenticatedOrgSlugSampleSetsLazyRoute
   AuthenticatedOrgSlugIndexLazyRoute: typeof AuthenticatedOrgSlugIndexLazyRoute
   AuthenticatedAppsIndexLazyRoute: typeof AuthenticatedAppsIndexLazyRoute
   AuthenticatedChatsIndexLazyRoute: typeof AuthenticatedChatsIndexLazyRoute
@@ -688,6 +710,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOrgSlugProjectNameLazyRoute:
     AuthenticatedOrgSlugProjectNameLazyRouteWithChildren,
   AuthenticatedOrgSlugProjectsLazyRoute: AuthenticatedOrgSlugProjectsLazyRoute,
+  AuthenticatedOrgSlugSampleSetsLazyRoute:
+    AuthenticatedOrgSlugSampleSetsLazyRoute,
   AuthenticatedOrgSlugIndexLazyRoute: AuthenticatedOrgSlugIndexLazyRoute,
   AuthenticatedAppsIndexLazyRoute: AuthenticatedAppsIndexLazyRoute,
   AuthenticatedChatsIndexLazyRoute: AuthenticatedChatsIndexLazyRoute,
@@ -715,6 +739,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/$orgSlug/$projectName': typeof AuthenticatedOrgSlugProjectNameLazyRouteWithChildren
   '/$orgSlug/projects': typeof AuthenticatedOrgSlugProjectsLazyRoute
+  '/$orgSlug/sample-sets': typeof AuthenticatedOrgSlugSampleSetsLazyRoute
   '/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayLazyRoute
@@ -746,6 +771,7 @@ export interface FileRoutesByTo {
   '/503': typeof errors503LazyRoute
   '/': typeof AuthenticatedIndexRoute
   '/$orgSlug/projects': typeof AuthenticatedOrgSlugProjectsLazyRoute
+  '/$orgSlug/sample-sets': typeof AuthenticatedOrgSlugSampleSetsLazyRoute
   '/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
   '/settings/display': typeof AuthenticatedSettingsDisplayLazyRoute
@@ -782,6 +808,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/$orgSlug/$projectName': typeof AuthenticatedOrgSlugProjectNameLazyRouteWithChildren
   '/_authenticated/$orgSlug/projects': typeof AuthenticatedOrgSlugProjectsLazyRoute
+  '/_authenticated/$orgSlug/sample-sets': typeof AuthenticatedOrgSlugSampleSetsLazyRoute
   '/_authenticated/settings/account': typeof AuthenticatedSettingsAccountLazyRoute
   '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceLazyRoute
   '/_authenticated/settings/display': typeof AuthenticatedSettingsDisplayLazyRoute
@@ -818,6 +845,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$orgSlug/$projectName'
     | '/$orgSlug/projects'
+    | '/$orgSlug/sample-sets'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
@@ -848,6 +876,7 @@ export interface FileRouteTypes {
     | '/503'
     | '/'
     | '/$orgSlug/projects'
+    | '/$orgSlug/sample-sets'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/display'
@@ -882,6 +911,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/$orgSlug/$projectName'
     | '/_authenticated/$orgSlug/projects'
+    | '/_authenticated/$orgSlug/sample-sets'
     | '/_authenticated/settings/account'
     | '/_authenticated/settings/appearance'
     | '/_authenticated/settings/display'
@@ -962,6 +992,7 @@ export const routeTree = rootRoute
         "/_authenticated/",
         "/_authenticated/$orgSlug/$projectName",
         "/_authenticated/$orgSlug/projects",
+        "/_authenticated/$orgSlug/sample-sets",
         "/_authenticated/$orgSlug/",
         "/_authenticated/apps/",
         "/_authenticated/chats/",
@@ -1031,6 +1062,10 @@ export const routeTree = rootRoute
     },
     "/_authenticated/$orgSlug/projects": {
       "filePath": "_authenticated/$orgSlug/projects.lazy.tsx",
+      "parent": "/_authenticated"
+    },
+    "/_authenticated/$orgSlug/sample-sets": {
+      "filePath": "_authenticated/$orgSlug/sample-sets.lazy.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/settings/account": {

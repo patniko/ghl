@@ -1,11 +1,5 @@
 .DS_Store
-# Project specific
-model_data/
-.ipynb_checkpoints/
-*.pyc
-saved_embeddings/*
-model_data.zip
-__MACOSX/._model_data
+
 
 # Environment variables and secrets
 .env.dev
@@ -18,3 +12,13 @@ __pycache__/
 poetry.lock
 mlflow/mlartifacts/
 mlflow/mlruns/
+
+# Temporary files
+hub/ph-api/uploads/
+saved_embeddings/*
+model_data.zip
+model_data/
+.ipynb_checkpoints/
+*.pyc
+__MACOSX/._model_data
+test_output/

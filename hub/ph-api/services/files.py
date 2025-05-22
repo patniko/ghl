@@ -26,7 +26,6 @@ from models import (
     Check,
 )
 from services import storage
-from services.catalog.checks.catalog import CHECK_IMPLEMENTATIONS
 from middleware import get_organization_from_path
 from services.storage import get_storage_backend, get_project_storage_path
 

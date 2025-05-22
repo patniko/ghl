@@ -18,7 +18,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import select, func
 from db import SessionLocal
 from models import Check, DataType, Organization
-from services.catalog.checks import CHECK_IMPLEMENTATIONS
 
 
 def init_system_checks(organization_id):
@@ -243,11 +242,11 @@ def init_system_checks(organization_id):
         ]
 
         # Validate implementations
-        for check_data in system_checks:
-            if check_data["implementation"] not in CHECK_IMPLEMENTATIONS:
-                print(
-                    f"Warning: Implementation '{check_data['implementation']}' not found for check '{check_data['name']}'"
-                )
+        #for check_data in system_checks:
+        #    if check_data["implementation"] not in CHECK_IMPLEMENTATIONS:
+        #        print(
+        #            f"Warning: Implementation '{check_data['implementation']}' not found for check '{check_data['name']}'"
+        #        )
 
         # Create system checks
         for check_data in system_checks:

@@ -1,5 +1,14 @@
 import api from './api'
-import { Batch, BatchCreate, BatchFile, BatchStatistics, BatchUpdate, QualitySummary } from '../types/batch'
+import { 
+  Batch, 
+  BatchCreate, 
+  BatchFile, 
+  BatchStatistics, 
+  BatchUpdate, 
+  QualitySummary,
+  BatchProcessingResponse,
+  BatchProcessingStatus
+} from '../types/batch'
 
 export interface AllFilesParams {
   project_id?: number
@@ -33,6 +42,33 @@ export const batchService = {
   // Get all batches
   getBatches: async (orgSlug?: string): Promise<Batch[]> => {
     const endpoint = orgSlug ? `/batches/${orgSlug}` : '/batches'
+    const response = await api.get(endpoint)
+    return response.data
+  },
+  
+  // Process a batch
+  processBatch: async (batchId: number, orgSlug?: string): Promise<BatchProcessingResponse> => {
+    const endpoint = orgSlug 
+      ? `/batches/${orgSlug}/processing/process?batch_id=${batchId}` 
+      : `/batches/processing/process?batch_id=${batchId}`
+    const response = await api.post(endpoint)
+    return response.data
+  },
+  
+  // Cancel batch processing
+  cancelBatchProcessing: async (batchId: number, orgSlug?: string): Promise<BatchProcessingResponse> => {
+    const endpoint = orgSlug 
+      ? `/batches/${orgSlug}/processing/cancel?batch_id=${batchId}` 
+      : `/batches/processing/cancel?batch_id=${batchId}`
+    const response = await api.post(endpoint)
+    return response.data
+  },
+  
+  // Get batch processing status
+  getBatchProcessingStatus: async (batchId: number, orgSlug?: string): Promise<BatchProcessingStatus> => {
+    const endpoint = orgSlug 
+      ? `/batches/${orgSlug}/processing/status?batch_id=${batchId}` 
+      : `/batches/processing/status?batch_id=${batchId}`
     const response = await api.get(endpoint)
     return response.data
   },

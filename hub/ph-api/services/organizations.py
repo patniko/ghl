@@ -254,7 +254,6 @@ async def delete_organization(
         from models import (
             Batch,
             File,
-            SyntheticDataset,
             DicomFile,
             Model,
             ColumnMapping,
@@ -288,11 +287,6 @@ async def delete_organization(
         db.query(Batch).filter(Batch.organization_id == org_id).delete(
             synchronize_session=False
         )
-
-        # 6. Delete synthetic datasets
-        db.query(SyntheticDataset).filter(
-            SyntheticDataset.organization_id == org_id
-        ).delete(synchronize_session=False)
 
         # 7. Delete models
         db.query(Model).filter(Model.organization_id == org_id).delete(
