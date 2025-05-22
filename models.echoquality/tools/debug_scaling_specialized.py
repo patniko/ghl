@@ -26,7 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger("debug_scaling_specialized")
 
 # Create output directory for debug images
-DEBUG_DIR = Path("./debug_images_specialized")
+DEBUG_DIR = Path("./results/debug_images_specialized")
 DEBUG_DIR.mkdir(exist_ok=True)
 
 def save_debug_image(img, title, filename):
@@ -264,7 +264,7 @@ def main(file_path=None):
         if len(sys.argv) > 1:
             file_path = sys.argv[1]
         else:
-            file_path = "./model_data/study_data/epiq7/1.2.840.113654.2.70.1.173304721797905812758989059075929126362"
+            file_path = "./data/epiq7/1.2.840.113654.2.70.1.173304721797905812758989059075929126362"
     
     logger.info(f"Starting specialized debug script for file: {file_path}")
     

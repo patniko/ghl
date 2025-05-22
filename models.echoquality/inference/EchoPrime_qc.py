@@ -16,8 +16,8 @@ from pathlib import Path
 SAVE_MASK_IMAGES = True  # Set to False to disable saving before/after masking images
 
 # Default configuration
-DEFAULT_DATA_PATH = './model_data/example_study'
-MODEL_WEIGHTS = "./video_quality_model.pt"
+DEFAULT_DATA_PATH = './data/example_study'
+MODEL_WEIGHTS = "./weights/video_quality_model.pt"
 FRAMES_TO_TAKE = 32
 FRAME_STRIDE = 2
 VIDEO_SIZE = 112
@@ -131,7 +131,7 @@ def mask_outside_ultrasound(original_pixels: np.array, dicom_filename=None) -> n
                     frame_original = original_pixels[frame_idx].astype('uint8')
                     save_frame_image(
                         frame_original, 
-                        './mask_images/original', 
+                        './results/mask_images/original', 
                         f"{dicom_filename.replace('.dcm', '')}_{i}.png"
                     )
         
@@ -148,7 +148,7 @@ def mask_outside_ultrasound(original_pixels: np.array, dicom_filename=None) -> n
                     frame = cv2.cvtColor(frame, cv2.COLOR_YUV2BGR)
                     save_frame_image(
                         frame, 
-                        './mask_images/before', 
+                        './results/mask_images/before', 
                         f"{dicom_filename.replace('.dcm', '')}_{i}.png"
                     )
         ##################### CREATE MASK #####################
@@ -232,7 +232,7 @@ def mask_outside_ultrasound(original_pixels: np.array, dicom_filename=None) -> n
                     frame = vid[frame_idx].astype('uint8')
                     save_frame_image(
                         frame, 
-                        './mask_images/after', 
+                        './results/mask_images/after', 
                         f"{dicom_filename.replace('.dcm', '')}_{i}.png"
                     )
         
@@ -423,7 +423,7 @@ def clear_mask_images_directory():
     """
     if SAVE_MASK_IMAGES:
         # Create or clear the mask_images directory and its subdirectories
-        mask_dir = './mask_images'
+        mask_dir = './results/mask_images'
         original_dir = os.path.join(mask_dir, 'original')
         before_dir = os.path.join(mask_dir, 'before')
         after_dir = os.path.join(mask_dir, 'after')
@@ -542,7 +542,7 @@ def save_failed_files_to_json(device_results):
         device_results (dict): Results for a specific device including error statistics
     """
     # Create directory for failed files if it doesn't exist
-    failed_files_dir = './model_data/failed_files'
+    failed_files_dir = './results/failed_files'
     os.makedirs(failed_files_dir, exist_ok=True)
     
     device_name = device_results["device_name"]
@@ -693,7 +693,7 @@ def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description='EchoPrime Quality Control for multiple device folders')
     parser.add_argument('--folders', nargs='+', help='List of device folders to process')
-    parser.add_argument('--study_data', action='store_true', help='Process all device folders in model_data/study_data')
+    parser.add_argument('--study_data', action='store_true', help='Process all device folders in data/')
     parser.add_argument('--no-mask-images', action='store_true', help='Disable saving mask images')
     
     args = parser.parse_args()
@@ -702,9 +702,9 @@ def parse_arguments():
     if not args.folders and not args.study_data:
         return [DEFAULT_DATA_PATH]
     
-    # If --study_data flag is used, get all subdirectories in model_data/study_data
+    # If --study_data flag is used, get all subdirectories in data/
     if args.study_data:
-        study_data_path = './model_data/study_data'
+        study_data_path = './data'
         if os.path.exists(study_data_path):
             return [os.path.join(study_data_path, d) for d in os.listdir(study_data_path) 
                    if os.path.isdir(os.path.join(study_data_path, d))]

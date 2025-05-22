@@ -27,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger("debug_scaling_interactive")
 
 # Create output directory for debug images
-DEBUG_DIR = Path("./debug_images_interactive")
+DEBUG_DIR = Path("./results/debug_images_interactive")
 DEBUG_DIR.mkdir(exist_ok=True)
 
 def display_image(img, title="Image"):
@@ -225,7 +225,7 @@ def main(file_path=None):
         if len(sys.argv) > 1:
             file_path = sys.argv[1]
         else:
-            file_path = "./model_data/study_data/epiq7/1.2.840.113654.2.70.1.173304721797905812758989059075929126362"
+            file_path = "./data/epiq7/1.2.840.113654.2.70.1.173304721797905812758989059075929126362"
     
     print(f"Starting interactive debug script for file: {file_path}")
     

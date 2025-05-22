@@ -22,3 +22,8 @@ model_data/
 *.pyc
 __MACOSX/._model_data
 test_output/
+
+
+models.echoquality/data/
+models.echoquality/weights/
+models.echoquality/results/fail*
