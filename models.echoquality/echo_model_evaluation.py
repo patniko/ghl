@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import cv2
 from sklearn.metrics import confusion_matrix, roc_curve, auc, precision_recall_curve
 import seaborn as sns
-import mlflow
 import os
 from tqdm import tqdm
 from torchvision.models.video import r2plus1d_18
@@ -366,15 +365,19 @@ def plot_precision_recall_curve(recall, precision, pr_auc, save_path=None):
     
     return plt.gcf()
 
-def log_evaluation_to_mlflow(metrics, prefix=""):
+def save_evaluation_results(metrics, output_dir="evaluation_results", prefix=""):
     """
-    Log evaluation metrics to MLflow.
+    Save evaluation metrics and plots to a directory.
     
     Args:
         metrics (dict): Dictionary of evaluation metrics
-        prefix (str, optional): Prefix for metric names
+        output_dir (str): Directory to save results
+        prefix (str, optional): Prefix for filenames
     """
-    # Log scalar metrics
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Save scalar metrics to a text file
     scalar_metrics = {
         'accuracy': metrics['accuracy'],
         'precision': metrics['precision'],
@@ -385,29 +388,30 @@ def log_evaluation_to_mlflow(metrics, prefix=""):
         'pr_auc': metrics['pr_auc']
     }
     
-    for name, value in scalar_metrics.items():
-        mlflow.log_metric(f"{prefix}{name}", value)
+    metrics_path = os.path.join(output_dir, f"{prefix}metrics.txt")
+    with open(metrics_path, 'w') as f:
+        for name, value in scalar_metrics.items():
+            f.write(f"{name}: {value:.4f}\n")
     
-    # Create and log confusion matrix plot
+    # Create and save confusion matrix plot
     cm_fig = plot_confusion_matrix(metrics['confusion_matrix'])
-    cm_path = f"confusion_matrix_{prefix.strip('_')}.png"
+    cm_path = os.path.join(output_dir, f"{prefix}confusion_matrix.png")
     cm_fig.savefig(cm_path, bbox_inches='tight')
-    mlflow.log_artifact(cm_path)
     plt.close(cm_fig)
     
-    # Create and log ROC curve plot
+    # Create and save ROC curve plot
     roc_fig = plot_roc_curve(metrics['fpr'], metrics['tpr'], metrics['roc_auc'])
-    roc_path = f"roc_curve_{prefix.strip('_')}.png"
+    roc_path = os.path.join(output_dir, f"{prefix}roc_curve.png")
     roc_fig.savefig(roc_path, bbox_inches='tight')
-    mlflow.log_artifact(roc_path)
     plt.close(roc_fig)
     
-    # Create and log precision-recall curve plot
+    # Create and save precision-recall curve plot
     pr_fig = plot_precision_recall_curve(metrics['recall_curve'], metrics['precision_curve'], metrics['pr_auc'])
-    pr_path = f"pr_curve_{prefix.strip('_')}.png"
+    pr_path = os.path.join(output_dir, f"{prefix}pr_curve.png")
     pr_fig.savefig(pr_path, bbox_inches='tight')
-    mlflow.log_artifact(pr_path)
     plt.close(pr_fig)
+    
+    print(f"Evaluation results saved to {output_dir}")
 
 def analyze_misclassifications(model, dataloader, device, threshold=0.5, save_dir="misclassifications"):
     """

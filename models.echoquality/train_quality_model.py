@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision.models.video import r2plus1d_18
-import mlflow
 import os
 import glob
 import numpy as np
@@ -29,12 +28,7 @@ ANNOTATIONS_CSV = "echo_annotations.csv"  # Path to your CSV annotations
 VIDEOS_DIR = "echo_videos"  # Directory containing your 100 echo videos
 MODEL_WEIGHTS = "video_quality_model.pt"  # Path to your current model weights
 SAVE_DIR = "trained_models"  # Directory to save trained models
-USE_MLFLOW = True  # Set to False to disable MLflow tracking
 NUM_UNFROZEN_LAYERS = 2  # Number of layers to unfreeze for fine-tuning
-
-# Set up MLflow tracking if enabled
-if USE_MLFLOW:
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
 # Create save directory if it doesn't exist
 os.makedirs(SAVE_DIR, exist_ok=True)
@@ -333,19 +327,25 @@ def main():
         optimizer, mode='min', factor=0.1, patience=3, verbose=True
     )
     
-    # MLflow tracking
-    if USE_MLFLOW:
-        mlflow.start_run(run_name="EchoQuality_Training")
-        mlflow.log_params({
-            "learning_rate": LEARNING_RATE,
-            "batch_size": BATCH_SIZE,
-            "epochs": EPOCHS,
-            "weight_decay": WEIGHT_DECAY,
-            "unfrozen_layers": NUM_UNFROZEN_LAYERS,
-            "train_size": len(train_paths),
-            "val_size": len(val_paths),
-            "test_size": len(test_paths)
-        })
+    # Create a directory to save training metrics
+    metrics_dir = os.path.join(SAVE_DIR, "metrics")
+    os.makedirs(metrics_dir, exist_ok=True)
+    
+    # Save training parameters
+    params = {
+        "learning_rate": LEARNING_RATE,
+        "batch_size": BATCH_SIZE,
+        "epochs": EPOCHS,
+        "weight_decay": WEIGHT_DECAY,
+        "unfrozen_layers": NUM_UNFROZEN_LAYERS,
+        "train_size": len(train_paths),
+        "val_size": len(val_paths),
+        "test_size": len(test_paths)
+    }
+    
+    with open(os.path.join(metrics_dir, "params.txt"), "w") as f:
+        for key, value in params.items():
+            f.write(f"{key}: {value}\n")
     
     # Training loop
     best_val_loss = float('inf')
@@ -370,28 +370,30 @@ def main():
         # Update learning rate
         scheduler.step(val_loss)
         
-        # Log metrics with MLflow
-        if USE_MLFLOW:
-            mlflow.log_metrics({
-                "train_loss": train_loss,
-                "train_accuracy": train_acc,
-                "val_loss": val_loss,
-                "val_accuracy": val_acc,
-                "val_precision": val_precision,
-                "val_recall": val_recall,
-                "val_f1": val_f1,
-                "val_auc": val_auc,
-                "learning_rate": optimizer.param_groups[0]['lr']
-            }, step=epoch)
+        # Save metrics for this epoch
+        metrics = {
+            "train_loss": train_loss,
+            "train_accuracy": train_acc,
+            "val_loss": val_loss,
+            "val_accuracy": val_acc,
+            "val_precision": val_precision,
+            "val_recall": val_recall,
+            "val_f1": val_f1,
+            "val_auc": val_auc,
+            "learning_rate": optimizer.param_groups[0]['lr']
+        }
+        
+        # Save metrics to file
+        metrics_path = os.path.join(metrics_dir, f"epoch_{epoch+1}_metrics.txt")
+        with open(metrics_path, 'w') as f:
+            for key, value in metrics.items():
+                f.write(f"{key}: {value:.6f}\n")
         
         # Save best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(model.state_dict(), best_model_path)
             print(f"Saved best model to {best_model_path}")
-            
-            if USE_MLFLOW:
-                mlflow.log_artifact(best_model_path)
         
         # Save checkpoint
         checkpoint_path = os.path.join(SAVE_DIR, f"checkpoint_epoch_{epoch+1}.pt")
@@ -416,19 +418,21 @@ def main():
     print(f"Test Precision: {test_precision:.4f}, Test Recall: {test_recall:.4f}")
     print(f"Test F1: {test_f1:.4f}, Test AUC: {test_auc:.4f}")
     
-    # Log test metrics with MLflow
-    if USE_MLFLOW:
-        mlflow.log_metrics({
-            "test_loss": test_loss,
-            "test_accuracy": test_acc,
-            "test_precision": test_precision,
-            "test_recall": test_recall,
-            "test_f1": test_f1,
-            "test_auc": test_auc
-        })
-        
-        # End MLflow run
-        mlflow.end_run()
+    # Save test metrics
+    test_metrics = {
+        "test_loss": test_loss,
+        "test_accuracy": test_acc,
+        "test_precision": test_precision,
+        "test_recall": test_recall,
+        "test_f1": test_f1,
+        "test_auc": test_auc
+    }
+    
+    # Save test metrics to file
+    test_metrics_path = os.path.join(metrics_dir, "test_metrics.txt")
+    with open(test_metrics_path, 'w') as f:
+        for key, value in test_metrics.items():
+            f.write(f"{key}: {value:.6f}\n")
     
     print("Training complete!")
 
