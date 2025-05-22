@@ -5,7 +5,6 @@ import numpy as np
 from tqdm import tqdm
 import cv2
 import pydicom
-import mlflow
 import os
 import shutil
 import argparse
@@ -14,12 +13,7 @@ from torchvision.models.video import r2plus1d_18
 from pathlib import Path
 
 # Flags for configuration
-USE_MLFLOW = True  # Set to False to disable MLflow tracking
 SAVE_MASK_IMAGES = True  # Set to False to disable saving before/after masking images
-
-# Set up MLflow tracking if enabled
-if USE_MLFLOW:
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
 # Default configuration
 DEFAULT_DATA_PATH = './model_data/example_study'
@@ -540,6 +534,67 @@ def save_results_to_json(all_results, output_file="quality_results.json"):
         json.dump(all_results, f, indent=2)
     print(f"\nResults saved to {output_file}")
 
+def save_failed_files_to_json(device_results):
+    """
+    Save failed files information to a JSON file per device.
+    
+    Args:
+        device_results (dict): Results for a specific device including error statistics
+    """
+    # Create directory for failed files if it doesn't exist
+    failed_files_dir = './model_data/failed_files'
+    os.makedirs(failed_files_dir, exist_ok=True)
+    
+    device_name = device_results["device_name"]
+    error_stats = device_results["error_stats"]
+    
+    # Create a structured dictionary of failed files with reasons
+    failed_files = {}
+    for error_type, file_list in error_stats["error_files"].items():
+        for file_path in file_list:
+            # Use the filename as the key
+            filename = os.path.basename(file_path)
+            # If the file path contains a frame index (for frame-specific errors)
+            if " (frame " in file_path:
+                base_path, frame_info = file_path.split(" (frame ", 1)
+                filename = os.path.basename(base_path)
+                frame_num = frame_info.rstrip(")")
+                error_reason = f"{error_type} in frame {frame_num}"
+            else:
+                error_reason = error_type
+            
+            # Add to the failed files dictionary
+            if filename not in failed_files:
+                failed_files[filename] = {
+                    "path": file_path.split(" (frame ")[0] if " (frame " in file_path else file_path,
+                    "reasons": [error_reason]
+                }
+            else:
+                # If this file already has other errors, add this reason
+                if error_reason not in failed_files[filename]["reasons"]:
+                    failed_files[filename]["reasons"].append(error_reason)
+    
+    # Convert to a list format for easier processing
+    failed_files_list = [
+        {
+            "filename": filename,
+            "path": info["path"],
+            "reasons": info["reasons"]
+        }
+        for filename, info in failed_files.items()
+    ]
+    
+    # Save to a JSON file named after the device
+    output_file = os.path.join(failed_files_dir, f"{device_name}_failed_files.json")
+    with open(output_file, "w") as f:
+        json.dump({
+            "device": device_name,
+            "total_failed_files": len(failed_files_list),
+            "failed_files": failed_files_list
+        }, f, indent=2)
+    
+    print(f"Failed files for {device_name} saved to {output_file}")
+
 def run_quality_assessment(device_folders):
     """
     Run quality assessment on multiple device folders and generate a summary.
@@ -630,51 +685,15 @@ def run_quality_assessment(device_folders):
     # Save all results to JSON
     save_results_to_json(all_results)
     
-    # Log to MLflow if enabled
-    if USE_MLFLOW:
-        with mlflow.start_run(run_name="EchoPrime_QC_MultiDevice_Assessment") as run:
-            # Log parameters
-            mlflow.log_params({
-                "model_weights": MODEL_WEIGHTS,
-                "frames_to_take": FRAMES_TO_TAKE,
-                "frame_stride": FRAME_STRIDE,
-                "video_size": VIDEO_SIZE,
-                "quality_threshold": QUALITY_THRESHOLD,
-                "device_count": len(device_folders),
-                "device_folders": ",".join(device_folders)
-            })
-            
-            # Log summary metrics
-            mlflow.log_metrics({
-                "total_devices": all_results["summary"]["total_devices"],
-                "total_files": all_results["summary"]["total_files"],
-                "total_pass": all_results["summary"]["total_pass"],
-                "overall_pass_rate": all_results["summary"]["overall_pass_rate"],
-                "average_quality_score": all_results["summary"]["average_quality_score"]
-            })
-            
-            # Log device-specific metrics
-            for i, device in enumerate(all_results["devices"]):
-                device_name = device["device_name"]
-                mlflow.log_metrics({
-                    f"device_{i}_files": device["total_files"],
-                    f"device_{i}_pass": device["pass_count"],
-                    f"device_{i}_pass_rate": device["pass_rate"],
-                    f"device_{i}_avg_score": device["average_quality_score"]
-                })
-            
-            # Log the detailed results as a JSON artifact
-            mlflow.log_artifact("quality_results.json")
-            
-            print(f"\nResults logged to MLflow run: {run.info.run_id}")
-            print(f"View at: {mlflow.get_tracking_uri()}/#/experiments/0/runs/{run.info.run_id}")
+    # Save failed files for each device to separate JSON files
+    for device_results in all_results["devices"]:
+        save_failed_files_to_json(device_results)
 
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description='EchoPrime Quality Control for multiple device folders')
     parser.add_argument('--folders', nargs='+', help='List of device folders to process')
     parser.add_argument('--study_data', action='store_true', help='Process all device folders in model_data/study_data')
-    parser.add_argument('--mlflow', action='store_true', help='Enable MLflow tracking')
     parser.add_argument('--no-mask-images', action='store_true', help='Disable saving mask images')
     
     args = parser.parse_args()

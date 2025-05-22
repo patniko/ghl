@@ -1,6 +1,6 @@
-# EchoQuality
+# Echo Quality Assessment Tools
 
-A deep learning tool for assessing the quality of echocardiogram videos.
+This repository contains tools for assessing the quality of echocardiogram (echo) DICOM files and debugging image scaling issues.
 
 ## Overview
 
@@ -10,171 +10,139 @@ EchoQuality uses a pre-trained R(2+1)D model to classify the quality of echocard
 
 - Automatic masking of non-ultrasound regions in echo videos
 - Quality assessment with detailed scoring and feedback
-- MLflow integration for experiment tracking
 - GradCAM visualization to understand model decisions
 - Comprehensive training pipeline with data augmentation
 - Jupyter notebook for interactive exploration
 
-## Installation
+## EchoPrime Quality Control
 
-### Using Poetry (Recommended)
+The main tool, `EchoPrime_qc.py`, is used to assess the quality of echo DICOM files. It processes DICOM files, applies masking to isolate the ultrasound region, and uses a pre-trained model to evaluate the quality of each file.
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/echoquality.git
-cd echoquality
-
-# Install dependencies using Poetry
-make setup
-```
-
-### Using pip
+### Usage
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/echoquality.git
-cd echoquality
+# Process a specific folder of DICOM files
+python EchoPrime_qc.py --folders ./path/to/dicom/folder
 
-# Install dependencies using pip
-pip install -r requirements.txt
+# Process all device folders in model_data/study_data
+python EchoPrime_qc.py --study_data
+
+# Disable saving mask images
+python EchoPrime_qc.py --no-mask-images
 ```
 
-## Quick Start
+### Command Line Arguments
 
-### Running the Demo Notebook
+- `--folders`: List of device folders to process
+- `--study_data`: Process all device folders in model_data/study_data
+- `--no-mask-images`: Disable saving mask images
 
-The easiest way to get started is to run the demo Jupyter notebook:
+### Output
+
+The script generates:
+- A summary of quality assessment results in the terminal
+- A JSON file (`quality_results.json`) with detailed results
+- JSON files in `./model_data/failed_files/` with information about failed files
+- If enabled, mask images in `./mask_images/` showing the original, before, and after masking
+
+## Debug Tools
+
+The repository includes several debug tools for investigating image scaling issues in DICOM files:
+
+### 1. Basic Debug Tool (`debug_scaling.py`)
+
+Provides detailed visualization and logging of each step in the crop_and_scale process.
 
 ```bash
-make jupyter
+# Run with a specific DICOM file
+python debug_scaling.py ./path/to/dicom/file.dcm
+
+# Import and use programmatically
+import debug_scaling
+debug_scaling.main('./path/to/dicom/file.dcm')
 ```
 
-Then open `EchoQualityDemo.ipynb` in your browser.
+Output is saved to `./debug_images/` and `debug_scaling.log`.
 
-### Command Line Usage
+### 2. Interactive Debug Tool (`debug_scaling_interactive.py`)
 
-For batch processing of DICOM files:
+Provides a step-by-step interactive approach to debug the crop_and_scale function with Python debugger (pdb) breakpoints.
 
 ```bash
-python EchoPrime_qc.py
+# Run with a specific DICOM file
+python debug_scaling_interactive.py ./path/to/dicom/file.dcm
+
+# Import and use programmatically
+import debug_scaling_interactive
+debug_scaling_interactive.main('./path/to/dicom/file.dcm')
 ```
 
-The script will process all DICOM files in the `./model_data/example_study` directory by default.
+Output is saved to `./debug_images_interactive/`.
 
-For more advanced inference options:
+### 3. Visual Debug Tool (`debug_scaling_visual.py`)
+
+Provides a visual approach with side-by-side comparisons and detailed visualizations of problematic areas.
 
 ```bash
-python inference.py --input /path/to/dicom/files --output /path/to/save/results --gradcam
+# Run with a specific DICOM file
+python debug_scaling_visual.py ./path/to/dicom/file.dcm
+
+# Import and use programmatically
+import debug_scaling_visual
+debug_scaling_visual.main('./path/to/dicom/file.dcm')
 ```
 
-## Model Training
+Output is saved to `./debug_images_visual/` and `debug_scaling_visual.log`.
 
-To train the model on your own dataset:
+### 4. Specialized Debug Tool (`debug_scaling_specialized.py`)
 
-1. Prepare a CSV file with annotations (see `TRAINING.md` for details)
-2. Configure training parameters in `train_quality_model.py`
-3. Run the training script:
+Focuses on the specific problem of very narrow images being scaled to square outputs.
 
 ```bash
-make train
+# Run with a specific DICOM file
+python debug_scaling_specialized.py ./path/to/dicom/file.dcm
+
+# Import and use programmatically
+import debug_scaling_specialized
+debug_scaling_specialized.main('./path/to/dicom/file.dcm')
 ```
 
-For more detailed training instructions, see [TRAINING.md](TRAINING.md).
+Output is saved to `./debug_images_specialized/` and `debug_scaling_specialized.log`.
 
-## Project Structure
+## Example Workflow
 
-```
-.
-├── EchoPrime_qc.py           # Main script for quality assessment
-├── echo_data_augmentation.py # Data augmentation utilities
-├── echo_model_evaluation.py  # Model evaluation and visualization tools
-├── example_training.py       # Example script for training
-├── inference.py              # Script for batch inference
-├── train_quality_model.py    # Main training script
-├── EchoQualityDemo.ipynb     # Demo Jupyter notebook
-├── Makefile                  # Makefile with useful commands
-├── pyproject.toml            # Poetry configuration
-├── README.md                 # This file
-├── TRAINING.md               # Detailed training instructions
-├── video_quality_model.pt    # Pre-trained model weights
-├── mask_images/              # Directory for masked image outputs
-└── model_data/               # Directory for model data and examples
-```
+1. Run quality assessment on a folder of DICOM files:
+   ```bash
+   python EchoPrime_qc.py --folders ./model_data/study_data/epiq7
+   ```
 
-## Makefile Commands
+2. If issues are detected, use the debug tools to investigate:
+   ```bash
+   # Start with basic debugging
+   python debug_scaling.py ./model_data/study_data/epiq7/problematic_file.dcm
+   
+   # For more detailed visual analysis
+   python debug_scaling_visual.py ./model_data/study_data/epiq7/problematic_file.dcm
+   
+   # For interactive debugging
+   python debug_scaling_interactive.py ./model_data/study_data/epiq7/problematic_file.dcm
+   
+   # For specialized debugging of narrow images
+   python debug_scaling_specialized.py ./model_data/study_data/epiq7/problematic_file.dcm
+   ```
 
-The project includes a Makefile with useful commands:
+3. Review the debug output to identify and fix issues.
 
-```bash
-# Show available commands
-make help
+## Requirements
 
-# Setup environment
-make setup
-make setup-dev          # Setup with development dependencies
-make update-lock        # Update poetry.lock file
-
-# Run commands
-make jupyter            # Run Jupyter notebook
-make train              # Run model training
-make inference          # Run inference on example data
-
-# Docker commands
-make build-docker       # Build the Docker image
-make build-jupyter      # Build the Docker image for Jupyter
-make run-docker         # Run Docker container
-make run-jupyter        # Run Jupyter Docker container
-
-# MLflow commands
-make mlflow-server      # Start MLflow tracking server
-
-# Utility commands
-make clean              # Clean up temporary files
-```
-
-## Docker Support
-
-The project includes Docker support for easy deployment and reproducibility:
-
-```bash
-# Build and run the main Docker image
-make build-docker
-make run-docker
-
-# Build and run the Jupyter-specific Docker image
-make build-jupyter
-make run-jupyter
-```
-
-The Jupyter Docker container mounts the current directory as a volume, allowing you to edit files on your host machine and have the changes reflected in the container.
-
-## Dependencies
-
-- torch
-- numpy
-- tqdm
-- opencv-python
+- Python 3.6+
+- PyTorch
+- OpenCV (cv2)
 - pydicom
-- torchvision
-- mlflow
+- numpy
 - matplotlib
-- scikit-learn
-- pandas
-- seaborn
+- tqdm
 
-## License
+## Model
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```
-[Citation information]
-```
-
-## Acknowledgments
-
-- The model architecture is based on the R(2+1)D model from torchvision
-- [Add other acknowledgments as needed]
+The quality assessment uses a pre-trained R(2+1)D model located at `./video_quality_model.pt`.
