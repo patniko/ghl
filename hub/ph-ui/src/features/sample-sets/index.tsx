@@ -6,10 +6,9 @@ import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
 import { Button } from '@/components/ui/button'
-import { PlusIcon, DatabaseIcon } from 'lucide-react'
+import { PlusIcon, DatabaseIcon, DownloadIcon, Edit as EditIcon, Trash as TrashIcon } from 'lucide-react'
 import { SampleDataset, SamplesDatasetCreate } from '@/types/sample-dataset'
 import { samplesService } from '@/services/samplesService'
-import { SampleSetCard } from '@/components/sample-set/sample-set-card'
 import { CreateSampleSetModal } from '@/components/sample-set/create-sample-set-modal'
 import { DeleteSampleSetDialog } from '@/components/sample-set/delete-sample-set-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -232,9 +231,9 @@ export default function SampleSets() {
         <Separator className="shadow" />
 
         {isLoadingSamplesDatasets ? (
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 space-y-4">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-[200px] w-full" />
+              <Skeleton key={i} className="h-[100px] w-full" />
             ))}
           </div>
         ) : filteredDatasets.length === 0 ? (
@@ -253,31 +252,67 @@ export default function SampleSets() {
             </Button>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 space-y-3">
             {filteredDatasets.map((dataset) => (
-              <SampleSetCard
-                key={dataset.id}
-                dataset={dataset}
-                onViewDataset={(dataset) => {
-                  // In a real app, you would navigate to a details page
-                  toast({
-                    title: 'View Dataset',
-                    description: `Viewing dataset: ${dataset.name}`,
-                  })
-                }}
-                onEditDataset={(dataset) => {
-                  // In a real app, you would open an edit modal
-                  toast({
-                    title: 'Edit Dataset',
-                    description: `Editing dataset: ${dataset.name}`,
-                  })
-                }}
-                onDeleteDataset={(dataset) => {
-                  setSelectedDataset(dataset)
-                  setIsDeleteDatasetModalOpen(true)
-                }}
-                onDownloadDataset={handleDownloadDataset}
-              />
+              <div key={dataset.id} className="overflow-hidden rounded-md border bg-card text-card-foreground shadow-sm">
+                <div className="flex items-center justify-between p-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="rounded-md bg-muted p-2">
+                      <DatabaseIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div className="font-medium">{dataset.name}</div>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <span>{dataset.num_patients} patients</span>
+                        <span>•</span>
+                        <span>{new Date(dataset.created_at).toLocaleDateString()}</span>
+                        {dataset.description && (
+                          <>
+                            <span>•</span>
+                            <span className="truncate max-w-[300px]">{dataset.description}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDownloadDataset(dataset)}
+                      title="Download Dataset"
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        // In a real app, you would open an edit modal
+                        toast({
+                          title: 'Edit Dataset',
+                          description: `Editing dataset: ${dataset.name}`,
+                        })
+                      }}
+                      title="Edit Dataset"
+                    >
+                      <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedDataset(dataset)
+                        setIsDeleteDatasetModalOpen(true)
+                      }}
+                      title="Delete Dataset"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}

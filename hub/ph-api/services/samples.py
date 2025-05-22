@@ -64,12 +64,14 @@ async def generate_samples_dataset(
             output_dir = Path(temp_dir)
             
             # Build the command to run samples.py
+            # Use 'all' type and let the script generate all types
+            # We'll filter the results later based on the requested data_types
             cmd = [
                 sys.executable,
                 str(SAMPLES_SCRIPT),
                 "--num-samples", str(num_patients),
                 "--output-dir", str(output_dir),
-                "--type", ",".join(data_types),
+                "--type", "all",
             ]
             
             if include_partials:
