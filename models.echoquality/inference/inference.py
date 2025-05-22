@@ -17,8 +17,8 @@ from torchvision.models.video import r2plus1d_18
 import matplotlib.pyplot as plt
 
 # Import from our modules
-from EchoPrime_qc import mask_outside_ultrasound, crop_and_scale, get_quality_issues
-from echo_model_evaluation import visualize_gradcam
+from inference.EchoPrime_qc import mask_outside_ultrasound, crop_and_scale, get_quality_issues
+from training.echo_model_evaluation import visualize_gradcam
 
 # Constants for video processing (same as in EchoPrime_qc.py)
 frames_to_take = 32
@@ -204,7 +204,7 @@ def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Run inference with the echo quality model.")
     parser.add_argument("--input", type=str, required=True, help="Path to directory containing DICOM files")
-    parser.add_argument("--model", type=str, default="video_quality_model.pt", help="Path to model weights")
+    parser.add_argument("--model", type=str, default="weights/video_quality_model.pt", help="Path to model weights")
     parser.add_argument("--output", type=str, default="inference_output", help="Directory to save results")
     parser.add_argument("--threshold", type=float, default=0.3, help="Threshold for binary classification")
     parser.add_argument("--gradcam", action="store_true", help="Generate GradCAM visualizations")
@@ -222,7 +222,7 @@ def main():
     
     # Find DICOM files
     print(f"Finding DICOM files in {args.input}...")
-    dicom_paths = glob.glob(f"{args.input}/**/*.dcm", recursive=True)
+    dicom_paths = glob.glob(f"{args.input}/**/*", recursive=True)
     print(f"Found {len(dicom_paths)} DICOM files")
     
     if len(dicom_paths) == 0:

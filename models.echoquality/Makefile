@@ -25,6 +25,7 @@ help:
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make train              Run model training with default parameters"
 	@echo "  make inference          Run inference on example data"
+	@echo "  make quality-check      Run quality assessment on study data"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -64,19 +65,25 @@ update-lock:
 .PHONY: jupyter
 jupyter:
 	@echo "${YELLOW}Starting Jupyter notebook on port $(JUPYTER_PORT)${NC}"
-	@$(POETRY) run jupyter notebook --port $(JUPYTER_PORT)
+	@$(POETRY) run python run_jupyter.py --port $(JUPYTER_PORT)
 
 .PHONY: train
 train:
 	@echo "${YELLOW}Running model training...${NC}"
-	@$(POETRY) run python train_quality_model.py
+	@$(POETRY) run python -m training.train_quality_model
 	@echo "${GREEN}Training complete!${NC}"
 
 .PHONY: inference
 inference:
 	@echo "${YELLOW}Running inference on example data...${NC}"
-	@$(POETRY) run python inference.py --input ./model_data/example_study --output ./inference_output
-	@echo "${GREEN}Inference complete! Results saved to ./inference_output${NC}"
+	@$(POETRY) run python -m inference.inference --input ./data/example_study --output ./results/inference_output
+	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
+
+.PHONY: quality-check
+quality-check:
+	@echo "${YELLOW}Running quality assessment on study data...${NC}"
+	@$(POETRY) run python -m inference.EchoPrime_qc --study_data
+	@echo "${GREEN}Quality assessment complete! Results saved to quality_results.json${NC}"
 
 # Docker commands
 .PHONY: build-docker
