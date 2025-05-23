@@ -27,3 +27,5 @@ test_output/
 models.echoquality/data/
 models.echoquality/weights/
 models.echoquality/results/fail*
+models.echoprime/data/example_study/
+models.echoprime/weights/
