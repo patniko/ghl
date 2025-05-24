@@ -135,7 +135,7 @@ class EchoPrimeInference:
         Returns:
             torch.Tensor: Processed video tensor
         """
-        dicom_paths = glob.glob(f'{input_dir}/**/*.dcm', recursive=True)
+        dicom_paths = glob.glob(f'{input_dir}/**/*', recursive=True)
         stack_of_videos = []
         
         print(f"Processing {len(dicom_paths)} DICOM files from {input_dir}")
