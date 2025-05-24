@@ -29,6 +29,7 @@ help:
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make inference          Run inference on all folders in data/ directory"
+	@echo "  make inference-per-patient  Run inference on individual patients with device analysis"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -97,6 +98,12 @@ inference:
 	@echo "${YELLOW}Running EchoPrime inference on all folders in data/ directory...${NC}"
 	@$(POETRY) run python -m inference.inference --data_dir ./data --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
+
+.PHONY: inference-per-patient
+inference-per-patient:
+	@echo "${YELLOW}Running EchoPrime inference on individual patients...${NC}"
+	@$(POETRY) run python -m inference.inference_per_patient --data_dir ./data --output ./results/inference_output_per_patient
+	@echo "${GREEN}Per-patient inference complete! Results saved to ./results/inference_output_per_patient${NC}"
 
 # Docker commands
 .PHONY: build-docker

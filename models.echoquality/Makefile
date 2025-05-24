@@ -24,7 +24,7 @@ help:
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make train              Run model training with default parameters"
-	@echo "  make inference          Run inference on example data"
+	@echo "  make inference          Run inference on all folders in data/ directory"
 	@echo "  make quality-check      Run quality assessment on study data"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
@@ -75,8 +75,8 @@ train:
 
 .PHONY: inference
 inference:
-	@echo "${YELLOW}Running inference on example data...${NC}"
-	@$(POETRY) run python -m inference.inference --input ./data/example_study --output ./results/inference_output
+	@echo "${YELLOW}Running EchoQuality inference on all folders in data/ directory...${NC}"
+	@$(POETRY) run python -m inference.inference --data_dir ./data --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
 
 .PHONY: quality-check
