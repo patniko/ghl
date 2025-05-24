@@ -28,6 +28,7 @@ help:
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
+	@echo "  make inference          Run inference on all folders in data/ directory"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -90,6 +91,12 @@ download-data:
 jupyter:
 	@echo "${YELLOW}Starting Jupyter notebook on port $(JUPYTER_PORT)${NC}"
 	@$(POETRY) run jupyter notebook --port $(JUPYTER_PORT)
+
+.PHONY: inference
+inference:
+	@echo "${YELLOW}Running EchoPrime inference on all folders in data/ directory...${NC}"
+	@$(POETRY) run python -m inference.inference --data_dir ./data --output ./results/inference_output
+	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
 
 # Docker commands
 .PHONY: build-docker
