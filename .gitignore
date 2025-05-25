@@ -32,3 +32,5 @@ models.echoprime/weights/
 models.echoprime/data/
 models.echoprime/results/
 models.echoprime/dicom_analysis_results.json
+models.echoprime/data_organized/
+models.echoprime/data-old/
