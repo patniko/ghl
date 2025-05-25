@@ -98,8 +98,8 @@ class EchoPrimeConfigManager:
         "paths": {
             "data_dir": "./data",
             "output_dir": "./outputs",
-            "pretrained_path": null,
-            "resume_from": null
+            "pretrained_path": None,
+            "resume_from": None
         },
         "hardware": {
             "num_workers": 4,

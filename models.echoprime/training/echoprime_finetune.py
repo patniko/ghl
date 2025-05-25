@@ -12,6 +12,8 @@ import argparse
 import logging
 from pathlib import Path
 
+import torch
+
 # Add current directory to path to import local modules
 sys.path.append(str(Path(__file__).parent))
 
