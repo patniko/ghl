@@ -31,3 +31,4 @@ models.echoprime/data/example_study/
 models.echoprime/weights/
 models.echoprime/data/
 models.echoprime/results/
+models.echoprime/dicom_analysis_results.json
