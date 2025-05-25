@@ -1,27 +1,4 @@
-# EchoPrime Project Restructuring Summary
-
-This document summarizes the restructuring of the models.echoprime project to align with the clean, organized structure of models.echoquality.
-
-## Before Restructuring
-
-```
-models.echoprime/
-├── Project files (scattered in root)
-├── utils.py                     # Report processing utilities
-├── video_utils.py               # Mixed video processing functions
-├── EchoPrimeDemo.ipynb         # Demo notebook
-├── ViewClassificationDemo.ipynb # Demo notebook
-├── model_data/                  # Mixed content
-│   ├── candidates_data/         # Should be in weights/
-│   ├── example_study/           # Should be in data/
-│   └── weights/                 # Model weights
-├── models/                      # Empty directory
-├── routers/                     # Empty directory
-├── utils/                       # Empty directory
-└── __MACOSX/                   # System files
-```
-
-## After Restructuring
+# Project Structure
 
 ```
 models.echoprime/
@@ -52,36 +29,7 @@ models.echoprime/
     └── candidates_data/         # Moved from model_data/
 ```
 
-## Key Changes Made
-
-### 1. **File Reorganization**
-- **Moved data**: `model_data/example_study/` → `data/example_study/`
-- **Moved weights**: `model_data/weights/` → `weights/`
-- **Moved candidates**: `model_data/candidates_data/` → `weights/candidates_data/`
-- **Moved demos**: Root notebooks → `inference/`
-
-### 2. **Code Modularization**
-- **Split video_utils.py**:
-  - Preprocessing functions → `preprocessors/image_scaling.py` & `preprocessors/ultrasound_masking.py`
-  - I/O functions → `tools/video_io.py`
-- **Renamed utils.py** → `tools/report_processing.py` (more descriptive)
-
-### 3. **Directory Structure**
-- **Created organized modules**: preprocessors, tools, inference, results, training
-- **Added __init__.py files** for proper Python package structure
-- **Removed empty directories**: models/, routers/, utils/
-- **Cleaned up system files**: __MACOSX/, __pycache__, .ipynb_checkpoints
-
-### 4. **Benefits Achieved**
-- **Consistency**: Now matches echoquality's proven structure
-- **Modularity**: Clear separation of preprocessing, I/O, and report processing
-- **Maintainability**: Functions grouped by purpose, easier to find and modify
-- **Scalability**: Room for growth in each functional area
-- **Professional**: Clean, organized appearance
-
-## Function Mapping
-
-### From video_utils.py:
+## Preprocessors and Tools
 - `crop_and_scale()` → `preprocessors/image_scaling.py`
 - `apply_zoom()` → `preprocessors/image_scaling.py`
 - `mask_outside_ultrasound()` → `preprocessors/ultrasound_masking.py`
@@ -92,15 +40,12 @@ models.echoprime/
 - `write_image()` → `tools/video_io.py`
 - Color conversion functions → `tools/video_io.py`
 
-### From utils.py:
+## Utilities
 - All report processing functions → `tools/report_processing.py`
 
 This restructuring creates a clean, maintainable codebase that follows the same organizational principles as the successful echoquality project.
 
-## New Inference Capability
-
-### Make Inference Command
-Added a new `make inference` command that processes each folder in the `data/` directory independently:
+## Inference Capability
 
 ```bash
 make inference
