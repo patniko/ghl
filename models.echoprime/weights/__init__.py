@@ -1,6 +1,6 @@
 """
-Weights module for EchoPrime.
+Model weights and embeddings.
 
-This module contains model weights, checkpoints, and candidate data
-for the EchoPrime model.
+This package contains model weights, embeddings, and other model-related data
+for the echocardiogram quality assessment models.
 """
