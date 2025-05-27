@@ -20,6 +20,10 @@ help:
 	@echo "  make setup              Setup Poetry environment"
 	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
 	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
+	@echo "  make dicom-setup        Convert DICOM ECG files to NPY format"
+	@echo "  make dicom-inference    Run HuBERT-ECG inference on converted DICOM files"
+	@echo "  make dicom-metadata     Extract comprehensive metadata from DICOM files"
+	@echo "  make dicom-visualize    Create ECG signal visualizations"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
@@ -51,6 +55,30 @@ ptbxl-setup:
 	@echo "${YELLOW}Setting up PTB-XL dataset...${NC}"
 	@$(POETRY) run python scripts/setup_ptbxl.py
 	@echo "${GREEN}PTB-XL dataset setup complete!${NC}"
+
+.PHONY: dicom-setup
+dicom-setup:
+	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
+	@$(POETRY) run python scripts/dicom_to_npy.py
+	@echo "${GREEN}DICOM conversion complete!${NC}"
+
+.PHONY: dicom-inference
+dicom-inference:
+	@echo "${YELLOW}Running HuBERT-ECG inference on converted DICOM files...${NC}"
+	@$(POETRY) run python scripts/run_dicom_inference.py
+	@echo "${GREEN}DICOM inference complete!${NC}"
+
+.PHONY: dicom-metadata
+dicom-metadata:
+	@echo "${YELLOW}Extracting comprehensive metadata from DICOM files...${NC}"
+	@$(POETRY) run python scripts/dump_dicom_metadata.py
+	@echo "${GREEN}DICOM metadata extraction complete!${NC}"
+
+.PHONY: dicom-visualize
+dicom-visualize:
+	@echo "${YELLOW}Creating ECG signal visualizations...${NC}"
+	@$(POETRY) run python scripts/visualize_ecg_signals.py
+	@echo "${GREEN}ECG visualization complete!${NC}"
 
 # Run commands
 .PHONY: jupyter
