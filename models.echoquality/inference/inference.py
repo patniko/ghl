@@ -190,8 +190,6 @@ class EchoQualityInference:
                 os.makedirs(original_dir, exist_ok=True)
                 os.makedirs(before_dir, exist_ok=True)
                 os.makedirs(after_dir, exist_ok=True)
-            
-                print(f"Cleared and created mask image directories at {mask_dir}")
 
     def save_failed_files_to_json(self, folder_name, error_stats, save_dir):
         """

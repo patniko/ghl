@@ -20,7 +20,7 @@ help:
 	@echo "  make setup              Setup Poetry environment"
 	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
 	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
-	@echo "  make dicom-setup        Convert DICOM ECG files to NPY format"
+	@echo "  make dicom-prep        Convert DICOM ECG files to NPY format"
 	@echo "  make dicom-inference    Run HuBERT-ECG inference on converted DICOM files"
 	@echo "  make dicom-metadata     Extract comprehensive metadata from DICOM files"
 	@echo "  make dicom-visualize    Create ECG signal visualizations"
@@ -57,7 +57,7 @@ ptbxl-setup:
 	@$(POETRY) run python scripts/setup_ptbxl.py
 	@echo "${GREEN}PTB-XL dataset setup complete!${NC}"
 
-.PHONY: dicom-setup
+.PHONY: dicom-prep
 dicom-setup:
 	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
 	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
