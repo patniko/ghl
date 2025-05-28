@@ -1,21 +1,12 @@
-# GHL (GoHealth Labs) - Machine Learning Platform
-
-A comprehensive machine learning platform for healthcare applications, featuring multiple specialized models for ECG analysis, echocardiogram processing, and medical data analysis.
+# GHL
 
 ## 🏗️ Project Structure
 
 ```
 ghl/
-├── hub/                    # Core platform services
-│   ├── ph-api/            # Python API backend
-│   └── ph-ui/             # React frontend
-├── models.dino/           # DINO-based ECG foundation model
-├── models.echo/           # Echo analysis models
-├── models.echoprime/      # EchoPrime research model
-├── models.echoquality/    # Echo quality assessment
+├── models.echoprime/      # EchoPrime foundation model
+├── models.echoquality/    # EchoPrime quality assessment model
 ├── models.hubertecg/      # HuBERT-ECG foundation model
-├── mlflow/                # MLflow experiment tracking
-├── tools/                 # Shared utilities and tools
 ├── samples/               # Sample data and examples
 └── docs/                  # Documentation
 ```
@@ -95,35 +86,9 @@ cd ghl
 Each component has its own setup process. Navigate to the specific directory and run:
 
 ```bash
-# For Python-based components (models, API)
+# For models
 cd models.hubertecg  # or any other model directory
 make setup
-
-# For the React frontend
-cd hub/ph-ui
-npm install
-```
-
-### 3. Start Core Services
-
-#### API Backend
-```bash
-cd hub/ph-api
-make setup
-make run
-```
-
-#### Frontend
-```bash
-cd hub/ph-ui
-npm run dev
-```
-
-#### MLflow Tracking
-```bash
-cd mlflow
-make setup
-make start
 ```
 
 ## 📋 Component-Specific Setup
@@ -134,32 +99,6 @@ Each model directory contains its own `Makefile` with standardized commands:
 - `make train` - Train the model (where applicable)
 - `make test` - Run tests
 - `make clean` - Clean up generated files
-
-### Hub Services
-- **API (`hub/ph-api/`)**: FastAPI-based backend with PostgreSQL
-- **UI (`hub/ph-ui/`)**: React-based frontend with TypeScript
-
-### MLflow
-Experiment tracking and model registry service accessible at `http://localhost:5000`
-
-## 🔍 Verification
-
-After setup, verify your installation:
-
-```bash
-# Check Python version
-python3 --version
-
-# Check Poetry version
-poetry --version
-
-# Check Docker
-docker run hello-world
-
-# Test a model setup (example)
-cd models.hubertecg
-make setup
-```
 
 ## 🐛 Troubleshooting
 
@@ -185,19 +124,3 @@ make setup
 
 - [Project Overview](docs/overview.md)
 - [Pipeline Documentation](docs/pipeline.md)
-- [TODO and Roadmap](docs/todo.md)
-
-## 🤝 Contributing
-
-1. Ensure all system requirements are met
-2. Set up pre-commit hooks: `pre-commit install`
-3. Follow the coding standards defined in each component
-4. Run tests before submitting PRs
-
-## 📄 License
-
-This project contains multiple components with different licenses. Check individual directories for specific license information.
-
----
-
-**Need Help?** Check the component-specific README files or open an issue for support.
