@@ -69,9 +69,34 @@ make run-jupyter
 
 This will start a Jupyter Notebook server accessible at http://localhost:8888.
 
+## Project Structure
+
+This project has been restructured for better organization and maintainability. The new structure includes:
+
+```
+models.hubertecg/
+├── data/                        # Sample data and datasets
+├── docs/                        # Comprehensive documentation
+├── inference/                   # Inference scripts and demo notebooks
+├── preprocessors/               # ECG data preprocessing utilities
+├── results/                     # Outputs, results, and visualizations
+├── tools/                       # Utility scripts and helper functions
+├── training/                    # Training-related files and models
+├── scripts/                     # Setup and utility scripts
+├── reproducibility/            # Reproducibility data and splits
+└── weights/                     # Model weights and checkpoints
+```
+
+For detailed information about the project structure, see [`docs/STRUCTURE.md`](docs/STRUCTURE.md).
+
 ## Jupyter Notebook
 
-We provide a demo notebook (`HuBERT-ECG-Demo.ipynb`) that shows how to use the HuBERT-ECG model for ECG classification. You can run it using:
+We provide demo notebooks in the `inference/` directory that show how to use the HuBERT-ECG model for ECG classification:
+
+- `inference/HuBERT-ECG-Demo.ipynb`: Main demonstration notebook
+- `inference/EchoPrimeDemo.ipynb`: Additional demo notebook
+
+You can run them using:
 
 ```bash
 # Using Poetry
@@ -81,10 +106,46 @@ make jupyter
 python run_jupyter.py
 ```
 
+## Training and Fine-tuning
+
+### Quick Start
+```bash
+# Pre-training
+python training/pretrain.py --data_path /path/to/ecg/data --num_epochs 100
+
+# Fine-tuning
+python training/finetune.py --dataset ptbxl --task all --pretrained_model ./model.pt
+
+# Testing
+python tools/test.py --model_path ./model.pt --dataset ptbxl --task all
+```
+
+### Using Shell Scripts
+Convenient shell scripts are provided in the `training/` directory:
+
+```bash
+# Fine-tuning script
+./training/finetune.sh
+
+# Testing script
+./training/test.sh
+```
+
+For comprehensive training documentation, see [`docs/TRAINING.md`](docs/TRAINING.md).
+
 ## Reproducibility
-In the `reproducibility` folder you can find all train, validation, and test splits we used in our work as .csv files. You simply have to follow the instructions in the `reproducibility/README.md` to reproduce our results.
-As an example, you can easily fine-tune and evaluate an instance of HuBERT-ECG on PTB-XL All dataset, as shown in .sh scripts `finetune.sh` and `test.sh`.
+In the `reproducibility/` folder you can find all train, validation, and test splits we used in our work as .csv files. You simply have to follow the instructions in the [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) to reproduce our results.
+As an example, you can easily fine-tune and evaluate an instance of HuBERT-ECG on PTB-XL All dataset, as shown in the shell scripts in the `training/` directory.
 Prediction on a single instance takes less than 1 second on an A100 GPU node.
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- [`docs/STRUCTURE.md`](docs/STRUCTURE.md): Project organization and structure
+- [`docs/TRAINING.md`](docs/TRAINING.md): Training and fine-tuning guide
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): Reproducibility guidelines
+- [`docs/CODE_EXPLANATION.md`](docs/CODE_EXPLANATION.md): Code organization and functionality
 
 ## Makefile Commands
 
