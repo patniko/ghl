@@ -22,7 +22,7 @@ help:
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make train              Run model training with default parameters"
-	@echo "  make inference          Run inference on all folders in data/ directory"
+	@echo "  make inference          Run inference on all folders in raw/ directory"
 
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"

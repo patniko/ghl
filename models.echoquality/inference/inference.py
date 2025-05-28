@@ -12,6 +12,7 @@ import pydicom
 import cv2
 import json
 import argparse
+import shutil
 from pathlib import Path
 from tqdm import tqdm
 from torchvision.models.video import r2plus1d_18
@@ -36,16 +37,18 @@ mean = torch.tensor([29.110628, 28.076836, 29.096405]).reshape(3, 1, 1, 1)
 std = torch.tensor([47.989223, 46.456997, 47.20083]).reshape(3, 1, 1, 1)
 
 class EchoQualityInference:
-    def __init__(self, model_path="weights/video_quality_model.pt", device=None):
+    def __init__(self, model_path="weights/video_quality_model.pt", device=None, save_mask_images=True):
         """
         Initialize EchoQuality inference pipeline.
         
         Args:
             model_path (str): Path to model weights
             device (torch.device): Device to run inference on
+            save_mask_images (bool): Whether to save mask debugging images
         """
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model_path = model_path
+        self.save_mask_images = save_mask_images
         
         # Load model
         self._load_model()
@@ -143,6 +146,92 @@ class EchoQualityInference:
             print(f"Error processing {dicom_path}: {str(e)}")
             return None
 
+    def clear_mask_images_directory(self, save_dir):
+        """
+        Clear the mask_images directory to ensure fresh images for each run.
+        Creates the directory structure if it doesn't exist.
+        """
+        if self.save_mask_images and save_dir:
+            # Create or clear the mask_images directory and its subdirectories
+            mask_dir = os.path.join(save_dir, 'mask_images')
+            original_dir = os.path.join(mask_dir, 'original')
+            before_dir = os.path.join(mask_dir, 'before')
+            after_dir = os.path.join(mask_dir, 'after')
+            
+            # Remove existing directories if they exist
+            if os.path.exists(mask_dir):
+                shutil.rmtree(mask_dir)
+            
+            # Create fresh directories
+            os.makedirs(original_dir, exist_ok=True)
+            os.makedirs(before_dir, exist_ok=True)
+            os.makedirs(after_dir, exist_ok=True)
+            
+            print(f"Cleared and created mask image directories at {mask_dir}")
+
+    def save_failed_files_to_json(self, folder_name, error_stats, save_dir):
+        """
+        Save failed files information to a JSON file.
+        
+        Args:
+            folder_name (str): Name of the folder being processed
+            error_stats (dict): Error statistics dictionary
+            save_dir (str): Directory to save the failed files JSON
+        """
+        if not save_dir:
+            return
+            
+        # Create directory for failed files if it doesn't exist
+        failed_files_dir = os.path.join(save_dir, 'failed_files')
+        os.makedirs(failed_files_dir, exist_ok=True)
+        
+        # Create a structured dictionary of failed files with reasons
+        failed_files = {}
+        for error_type, file_list in error_stats["error_files"].items():
+            for file_path in file_list:
+                # Use the filename as the key
+                filename = os.path.basename(file_path)
+                # If the file path contains a frame index (for frame-specific errors)
+                if " (frame " in file_path:
+                    base_path, frame_info = file_path.split(" (frame ", 1)
+                    filename = os.path.basename(base_path)
+                    frame_num = frame_info.rstrip(")")
+                    error_reason = f"{error_type} in frame {frame_num}"
+                else:
+                    error_reason = error_type
+                
+                # Add to the failed files dictionary
+                if filename not in failed_files:
+                    failed_files[filename] = {
+                        "path": file_path.split(" (frame ")[0] if " (frame " in file_path else file_path,
+                        "reasons": [error_reason]
+                    }
+                else:
+                    # If this file already has other errors, add this reason
+                    if error_reason not in failed_files[filename]["reasons"]:
+                        failed_files[filename]["reasons"].append(error_reason)
+        
+        # Convert to a list format for easier processing
+        failed_files_list = [
+            {
+                "filename": filename,
+                "path": info["path"],
+                "reasons": info["reasons"]
+            }
+            for filename, info in failed_files.items()
+        ]
+        
+        # Save to a JSON file named after the folder
+        output_file = os.path.join(failed_files_dir, f"{folder_name}_failed_files.json")
+        with open(output_file, "w") as f:
+            json.dump({
+                "folder": folder_name,
+                "total_failed_files": len(failed_files_list),
+                "failed_files": failed_files_list
+            }, f, indent=2)
+        
+        print(f"Failed files for {folder_name} saved to {output_file}")
+
     def run_inference_on_folder(self, folder_path, threshold=0.3, save_dir=None, generate_gradcam=False, save_extracted_images=False, extracted_images_dir=None):
         """
         Run inference on all DICOM files in a folder.
@@ -160,64 +249,208 @@ class EchoQualityInference:
         """
         # Find DICOM files
         dicom_paths = glob.glob(f"{folder_path}/**/*", recursive=True)
-        dicom_paths = [p for p in dicom_paths if p.lower().endswith('.dcm') or os.path.isfile(p)]
+        
+        # Track error statistics
+        error_stats = {
+            "total_files": len(dicom_paths),
+            "processed_files": 0,
+            "successful_files": 0,
+            "error_counts": {
+                "not_dicom": 0,
+                "empty_pixel_array": 0,
+                "invalid_dimensions": 0,
+                "masking_error": 0,
+                "scaling_error": 0,
+                "other_errors": 0
+            },
+            "error_files": {
+                "not_dicom": [],
+                "empty_pixel_array": [],
+                "invalid_dimensions": [],
+                "masking_error": [],
+                "scaling_error": [],
+                "other_errors": []
+            }
+        }
         
         if not dicom_paths:
-            return {"error": "No DICOM files found", "results": {}}
+            return {"error": "No DICOM files found", "results": {}, "error_stats": error_stats}
         
         print(f"Processing {len(dicom_paths)} files from {folder_path}")
         
         results = {}
+        valid_dicom_paths = []
         
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
             if generate_gradcam:
                 os.makedirs(os.path.join(save_dir, "gradcam"), exist_ok=True)
+            # Clear mask images directory if saving is enabled
+            self.clear_mask_images_directory(save_dir)
         
-        for dicom_path in tqdm(dicom_paths, desc="Processing"):
+        for idx, dicom_path in enumerate(tqdm(dicom_paths, desc="Processing")):
             filename = os.path.basename(dicom_path)
             
-            # Process DICOM file
-            video = self.process_dicom(
-                dicom_path, 
-                save_mask_images=(save_dir is not None),
-                save_extracted_images=save_extracted_images,
-                extracted_images_dir=extracted_images_dir
-            )
-            
-            if video is None:
-                print(f"Skipping {filename}: Processing failed")
-                continue
-            
-            # Run inference
-            with torch.no_grad():
-                video = video.unsqueeze(0).to(self.device)  # Add batch dimension
-                output = self.model(video)
-                probability = torch.sigmoid(output).item()
-                prediction = 1 if probability >= threshold else 0
-                status = "PASS" if prediction > 0 else "FAIL"
-                assessment = get_quality_issues(probability)
-            
-            # Store results
-            results[filename] = {
-                "score": probability,
-                "status": status,
-                "assessment": assessment
-            }
-            
-            # Generate GradCAM visualization if requested
-            if generate_gradcam and save_dir and GRADCAM_AVAILABLE:
+            try:
+                # Try to read DICOM file
                 try:
-                    visualize_gradcam(
-                        self.model, 
-                        video.squeeze(0).cpu(), 
-                        target_layer_name="layer4", 
-                        save_path=os.path.join(save_dir, "gradcam", f"{filename.replace('.dcm', '')}_gradcam.png")
-                    )
+                    dcm = pydicom.dcmread(dicom_path)
+                    error_stats["processed_files"] += 1
                 except Exception as e:
-                    print(f"Error generating GradCAM for {filename}: {str(e)}")
-            elif generate_gradcam and save_dir and not GRADCAM_AVAILABLE:
-                print(f"Skipping GradCAM for {filename}: GradCAM not available (install seaborn)")
+                    error_stats["error_counts"]["not_dicom"] += 1
+                    error_stats["error_files"]["not_dicom"].append(dicom_path)
+                    continue
+                
+                try:
+                    pixels = dcm.pixel_array
+                except Exception as e:
+                    error_stats["error_counts"]["empty_pixel_array"] += 1
+                    error_stats["error_files"]["empty_pixel_array"].append(dicom_path)
+                    print(f"Error reading pixel array: {dicom_path} - {str(e)}")
+                    continue
+                
+                # Check dimensions
+                if pixels.ndim < 3:
+                    error_stats["error_counts"]["invalid_dimensions"] += 1
+                    error_stats["error_files"]["invalid_dimensions"].append(dicom_path)
+                    print(f"Excluding image with invalid dimensions: {dicom_path}")
+                    continue
+                
+                # If single channel repeat to 3 channels
+                if pixels.ndim == 3:
+                    pixels = np.repeat(pixels[..., None], 3, axis=3)
+                
+                # Check if pixel array is valid before processing
+                if pixels.size == 0 or pixels.shape[0] == 0:
+                    error_stats["error_counts"]["empty_pixel_array"] += 1
+                    error_stats["error_files"]["empty_pixel_array"].append(dicom_path)
+                    print(f"Skipping file with empty pixel array: {dicom_path}")
+                    continue
+                
+                # Mask everything outside ultrasound region
+                try:
+                    pixels = mask_outside_ultrasound(
+                        pixels, 
+                        filename if (save_dir and self.save_mask_images) else None
+                    )
+                    
+                    # Verify pixels are not empty after masking
+                    if pixels is None or len(pixels) == 0 or pixels.size == 0:
+                        error_stats["error_counts"]["masking_error"] += 1
+                        error_stats["error_files"]["masking_error"].append(dicom_path)
+                        print(f"Skipping file with invalid pixels after masking: {dicom_path}")
+                        continue
+                except Exception as e:
+                    error_stats["error_counts"]["masking_error"] += 1
+                    error_stats["error_files"]["masking_error"].append(dicom_path)
+                    print(f"Error during masking: {dicom_path} - {str(e)}")
+                    continue
+                
+                # Save extracted images to data directory if requested
+                if save_extracted_images and extracted_images_dir:
+                    os.makedirs(extracted_images_dir, exist_ok=True)
+                    base_filename = os.path.splitext(filename)[0]
+                    
+                    # Save a few sample frames as images
+                    sample_indices = np.linspace(0, len(pixels)-1, min(5, len(pixels)), dtype=int)
+                    for idx_frame, frame_idx in enumerate(sample_indices):
+                        frame = pixels[frame_idx]
+                        # Convert to uint8 for saving
+                        if frame.max() > 1.0:
+                            frame_uint8 = np.clip(frame, 0, 255).astype(np.uint8)
+                        else:
+                            frame_uint8 = (frame * 255).astype(np.uint8)
+                        
+                        # Save as PNG
+                        frame_path = os.path.join(extracted_images_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                        cv2.imwrite(frame_path, frame_uint8)
+                
+                # Model specific preprocessing
+                x = np.zeros((len(pixels), video_size, video_size, 3))
+                valid_frames = True
+                for i in range(len(x)):
+                    # Check if the frame is valid before scaling
+                    if pixels[i].size == 0 or pixels[i].shape[0] == 0 or pixels[i].shape[1] == 0:
+                        error_stats["error_counts"]["invalid_dimensions"] += 1
+                        error_stats["error_files"]["invalid_dimensions"].append(f"{dicom_path} (frame {i})")
+                        print(f"Skipping file with invalid frame at index {i}: {dicom_path}")
+                        valid_frames = False
+                        break
+                    try:
+                        x[i] = crop_and_scale(pixels[i])
+                    except Exception as e:
+                        error_stats["error_counts"]["scaling_error"] += 1
+                        error_stats["error_files"]["scaling_error"].append(f"{dicom_path} (frame {i})")
+                        print(f"Error scaling frame {i} in {dicom_path}: {str(e)}")
+                        valid_frames = False
+                        break
+                
+                # Skip if any frame processing failed
+                if not valid_frames:
+                    continue
+                
+                # Convert to tensor and permute dimensions
+                x = torch.as_tensor(x, dtype=torch.float).permute([3, 0, 1, 2])
+                
+                # Normalize
+                x.sub_(mean).div_(std)
+                
+                # If not enough frames, add padding
+                if x.shape[1] < frames_to_take:
+                    padding = torch.zeros(
+                        (
+                            3,
+                            frames_to_take - x.shape[1],
+                            video_size,
+                            video_size,
+                        ),
+                        dtype=torch.float,
+                    )
+                    x = torch.cat((x, padding), dim=1)
+                
+                # Apply stride and take required frames
+                start = 0
+                x = x[:, start: (start + frames_to_take): frame_stride, :, :]
+                
+                # Run inference
+                with torch.no_grad():
+                    x = x.unsqueeze(0).to(self.device)  # Add batch dimension
+                    output = self.model(x)
+                    probability = torch.sigmoid(output).item()
+                    prediction = 1 if probability >= threshold else 0
+                    status = "PASS" if prediction > 0 else "FAIL"
+                    assessment = get_quality_issues(probability)
+                
+                # Store results
+                results[filename] = {
+                    "score": probability,
+                    "status": status,
+                    "assessment": assessment,
+                    "path": dicom_path
+                }
+                
+                valid_dicom_paths.append(dicom_path)
+                error_stats["successful_files"] += 1
+                
+                # Generate GradCAM visualization if requested
+                if generate_gradcam and save_dir and GRADCAM_AVAILABLE:
+                    try:
+                        visualize_gradcam(
+                            self.model, 
+                            x.squeeze(0).cpu(), 
+                            target_layer_name="layer4", 
+                            save_path=os.path.join(save_dir, "gradcam", f"{filename.replace('.dcm', '')}_gradcam.png")
+                        )
+                    except Exception as e:
+                        print(f"Error generating GradCAM for {filename}: {str(e)}")
+                elif generate_gradcam and save_dir and not GRADCAM_AVAILABLE:
+                    print(f"Skipping GradCAM for {filename}: GradCAM not available (install seaborn)")
+                        
+            except Exception as e:
+                error_stats["error_counts"]["other_errors"] += 1
+                error_stats["error_files"]["other_errors"].append(dicom_path)
+                print(f"Corrupt file or unexpected error: {dicom_path}")
+                print(str(e))
         
         # Save results to JSON if save_dir is provided
         if save_dir and results:
@@ -227,7 +460,7 @@ class EchoQualityInference:
             # Create a summary plot
             self.create_summary_plot(results, save_dir)
         
-        return {"results": results, "total_files": len(dicom_paths)}
+        return {"results": results, "total_files": len(dicom_paths), "error_stats": error_stats}
 
     def create_summary_plot(self, results, save_dir):
         """
@@ -320,6 +553,11 @@ class EchoQualityInference:
             
             results = inference_result["results"]
             total_files = inference_result["total_files"]
+            error_stats = inference_result.get("error_stats", {})
+            
+            # Save failed files to JSON if there are any errors
+            if folder_save_dir and error_stats:
+                self.save_failed_files_to_json(folder_name, error_stats, folder_save_dir)
             
             # Calculate statistics
             pass_count = sum(1 for result in results.values() if result["status"] == "PASS")
@@ -334,7 +572,8 @@ class EchoQualityInference:
                 "pass_count": pass_count,
                 "fail_count": fail_count,
                 "pass_rate": pass_rate,
-                "results": results
+                "results": results,
+                "error_stats": error_stats
             }
             
         except Exception as e:

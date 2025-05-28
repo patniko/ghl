@@ -26,11 +26,69 @@ The project is organized into the following directories:
 - Comprehensive training pipeline with data augmentation
 - Jupyter notebook for interactive exploration
 
-## EchoPrime Quality Control
+## Quick Start
 
-The main tool, `inference/EchoPrime_qc.py`, is used to assess the quality of echo DICOM files. It processes DICOM files, applies masking to isolate the ultrasound region, and uses a pre-trained model to evaluate the quality of each file.
+### Running Quality Assessment
 
-### Usage
+The easiest way to run quality assessment is using the Makefile:
+
+```bash
+# Run inference on all DICOM files in raw/ directory
+make inference
+```
+
+This command:
+- Processes DICOM files from `raw/` directory
+- Extracts processed images to `data/` directory  
+- Saves analysis results to `results/inference_output/`
+
+### Directory Structure
+
+**Important**: Each folder in `raw/` represents one patient using one device in one study.
+
+```
+raw/                                    # Input: Raw DICOM files
+├── patient_001_device_A_study_001/     # One patient, one device, one study
+│   ├── view1.dcm
+│   ├── view2.dcm
+│   └── view3.dcm
+├── patient_002_device_B_study_001/     # Different patient/device/study
+│   ├── apical_4ch.dcm
+│   └── parasternal_long.dcm
+└── patient_003_device_A_study_002/
+    └── ...
+
+data/                                   # Output: Extracted images
+├── patient_001_device_A_study_001/
+│   ├── view1_frame_00.png
+│   ├── view1_frame_01.png
+│   └── ...
+├── patient_002_device_B_study_001/
+│   ├── apical_4ch_frame_00.png
+│   └── ...
+└── patient_003_device_A_study_002/
+    └── ...
+
+results/inference_output/               # Analysis results
+├── summary.json
+├── patient_001_device_A_study_001/
+│   ├── folder_summary.json
+│   ├── inference_results.json
+│   └── *.png (charts)
+├── patient_002_device_B_study_001/
+│   └── ...
+└── patient_003_device_A_study_002/
+    └── ...
+```
+
+## Documentation
+
+- **[Inference Pipeline Guide](docs/inference_pipeline.md)**: Comprehensive documentation of the `make inference` command
+- **[Quick Reference](docs/quick_reference.md)**: Quick reference for common tasks
+
+## EchoPrime Quality Control (Legacy)
+
+The legacy tool `inference/EchoPrime_qc.py` is still available for backward compatibility:
 
 ```bash
 # Process a specific folder of DICOM files
@@ -38,24 +96,7 @@ python -m inference.EchoPrime_qc --folders ./path/to/dicom/folder
 
 # Process all device folders in data/
 python -m inference.EchoPrime_qc --study_data
-
-# Disable saving mask images
-python -m inference.EchoPrime_qc --no-mask-images
 ```
-
-### Command Line Arguments
-
-- `--folders`: List of device folders to process
-- `--study_data`: Process all device folders in data/
-- `--no-mask-images`: Disable saving mask images
-
-### Output
-
-The script generates:
-- A summary of quality assessment results in the terminal
-- A JSON file (`quality_results.json`) with detailed results
-- JSON files in `./results/failed_files/` with information about failed files
-- If enabled, mask images in `./results/mask_images/` showing the original, before, and after masking
 
 ## Debug Tools
 
