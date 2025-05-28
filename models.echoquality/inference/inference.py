@@ -19,7 +19,7 @@ from torchvision.models.video import r2plus1d_18
 import matplotlib.pyplot as plt
 
 # Import from our modules
-from inference.EchoPrime_qc import mask_outside_ultrasound, crop_and_scale, get_quality_issues
+from preprocessors import mask_outside_ultrasound, crop_and_scale
 
 # Optional import for GradCAM
 try:
@@ -35,6 +35,29 @@ frame_stride = 2
 video_size = 112
 mean = torch.tensor([29.110628, 28.076836, 29.096405]).reshape(3, 1, 1, 1)
 std = torch.tensor([47.989223, 46.456997, 47.20083]).reshape(3, 1, 1, 1)
+
+def get_quality_issues(probability):
+    """
+    Provides a basic assessment of potential quality issues based on probability score.
+    
+    Args:
+        probability (float): The quality probability score from the model.
+        
+    Returns:
+        str: Description of potential quality issues.
+    """
+    if probability >= 0.8:
+        return "Excellent quality"
+    elif probability >= 0.6:
+        return "Good quality"
+    elif probability >= 0.3:
+        return "Acceptable quality, but may have minor issues"
+    elif probability >= 0.2:
+        return "Poor quality - likely issues with clarity, contrast, or positioning"
+    elif probability >= 0.1:
+        return "Very poor quality - significant issues with image acquisition"
+    else:
+        return "Critical issues - may include artifacts, improper view, or technical errors"
 
 class EchoQualityInference:
     def __init__(self, model_path="weights/video_quality_model.pt", device=None, save_mask_images=True):
@@ -232,6 +255,40 @@ class EchoQualityInference:
         
         print(f"Failed files for {folder_name} saved to {output_file}")
 
+    def print_error_summary(self, folder_name, error_stats):
+        """
+        Print a clean summary of errors for a folder.
+        
+        Args:
+            folder_name (str): Name of the folder
+            error_stats (dict): Error statistics dictionary
+        """
+        if not error_stats or not error_stats.get("error_counts"):
+            return
+            
+        total_errors = sum(error_stats["error_counts"].values())
+        if total_errors == 0:
+            return
+            
+        print(f"\n📊 Error Summary for {folder_name}:")
+        print(f"   Total files: {error_stats['total_files']}")
+        print(f"   Successful: {error_stats['successful_files']}")
+        print(f"   Failed: {total_errors}")
+        print("   Error breakdown:")
+        
+        for error_type, count in error_stats["error_counts"].items():
+            if count > 0:
+                error_descriptions = {
+                    "not_dicom": "Not valid DICOM files",
+                    "empty_pixel_array": "Empty or missing pixel data",
+                    "invalid_dimensions": "Invalid image dimensions",
+                    "masking_error": "Ultrasound masking failed",
+                    "scaling_error": "Frame scaling/cropping failed",
+                    "other_errors": "Other processing errors"
+                }
+                description = error_descriptions.get(error_type, error_type)
+                print(f"     • {description}: {count}")
+
     def run_inference_on_folder(self, folder_path, threshold=0.3, save_dir=None, generate_gradcam=False, save_extracted_images=False, extracted_images_dir=None):
         """
         Run inference on all DICOM files in a folder.
@@ -306,14 +363,12 @@ class EchoQualityInference:
                 except Exception as e:
                     error_stats["error_counts"]["empty_pixel_array"] += 1
                     error_stats["error_files"]["empty_pixel_array"].append(dicom_path)
-                    print(f"Error reading pixel array: {dicom_path} - {str(e)}")
                     continue
                 
                 # Check dimensions
                 if pixels.ndim < 3:
                     error_stats["error_counts"]["invalid_dimensions"] += 1
                     error_stats["error_files"]["invalid_dimensions"].append(dicom_path)
-                    print(f"Excluding image with invalid dimensions: {dicom_path}")
                     continue
                 
                 # If single channel repeat to 3 channels
@@ -338,12 +393,10 @@ class EchoQualityInference:
                     if pixels is None or len(pixels) == 0 or pixels.size == 0:
                         error_stats["error_counts"]["masking_error"] += 1
                         error_stats["error_files"]["masking_error"].append(dicom_path)
-                        print(f"Skipping file with invalid pixels after masking: {dicom_path}")
                         continue
                 except Exception as e:
                     error_stats["error_counts"]["masking_error"] += 1
                     error_stats["error_files"]["masking_error"].append(dicom_path)
-                    print(f"Error during masking: {dicom_path} - {str(e)}")
                     continue
                 
                 # Save extracted images to data directory if requested
@@ -373,7 +426,6 @@ class EchoQualityInference:
                     if pixels[i].size == 0 or pixels[i].shape[0] == 0 or pixels[i].shape[1] == 0:
                         error_stats["error_counts"]["invalid_dimensions"] += 1
                         error_stats["error_files"]["invalid_dimensions"].append(f"{dicom_path} (frame {i})")
-                        print(f"Skipping file with invalid frame at index {i}: {dicom_path}")
                         valid_frames = False
                         break
                     try:
@@ -381,7 +433,6 @@ class EchoQualityInference:
                     except Exception as e:
                         error_stats["error_counts"]["scaling_error"] += 1
                         error_stats["error_files"]["scaling_error"].append(f"{dicom_path} (frame {i})")
-                        print(f"Error scaling frame {i} in {dicom_path}: {str(e)}")
                         valid_frames = False
                         break
                 
@@ -558,6 +609,9 @@ class EchoQualityInference:
             # Save failed files to JSON if there are any errors
             if folder_save_dir and error_stats:
                 self.save_failed_files_to_json(folder_name, error_stats, folder_save_dir)
+            
+            # Print error summary for this folder
+            self.print_error_summary(folder_name, error_stats)
             
             # Calculate statistics
             pass_count = sum(1 for result in results.values() if result["status"] == "PASS")

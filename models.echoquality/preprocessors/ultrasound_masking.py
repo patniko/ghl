@@ -160,5 +160,4 @@ def mask_outside_ultrasound(original_pixels, dicom_filename=None, save_mask_imag
         
         return vid
     except Exception as e:
-        print("Error masking returned as is.")
         return vid
