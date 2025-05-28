@@ -186,11 +186,12 @@ class EchoQualityInference:
                 shutil.rmtree(mask_dir)
             
             # Create fresh directories
-            os.makedirs(original_dir, exist_ok=True)
-            os.makedirs(before_dir, exist_ok=True)
-            os.makedirs(after_dir, exist_ok=True)
+            if self.save_mask_images:
+                os.makedirs(original_dir, exist_ok=True)
+                os.makedirs(before_dir, exist_ok=True)
+                os.makedirs(after_dir, exist_ok=True)
             
-            print(f"Cleared and created mask image directories at {mask_dir}")
+                print(f"Cleared and created mask image directories at {mask_dir}")
 
     def save_failed_files_to_json(self, folder_name, error_stats, save_dir):
         """
@@ -205,7 +206,7 @@ class EchoQualityInference:
             return
             
         # Create directory for failed files if it doesn't exist
-        failed_files_dir = os.path.join(save_dir, 'failed_files')
+        failed_files_dir = save_dir
         os.makedirs(failed_files_dir, exist_ok=True)
         
         # Create a structured dictionary of failed files with reasons

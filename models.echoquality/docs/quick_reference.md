@@ -34,7 +34,7 @@ raw_data/ (input)                      →  preprocessed_data/ (extracted images
 | `summary.json` | Overall statistics across all devices |
 | `{device}/folder_summary.json` | Per-device summary |
 | `{device}/inference_results.json` | Detailed quality scores per file |
-| `{device}/failed_files/{device}_failed_files.json` | Error details |
+| `{device}/{device}_failed_files.json` | Error details |
 | `{device}/*.png` | Visualization charts |
 
 ## Quality Scores
