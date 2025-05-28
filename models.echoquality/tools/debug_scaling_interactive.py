@@ -218,19 +218,28 @@ def main(file_path=None):
     
     Args:
         file_path (str, optional): Path to the DICOM file to analyze. If not provided,
-                                  will use command line argument or default file.
+                                  will use command line argument or prompt user.
     """
-    # Determine file path from arguments or use default
+    # Determine file path from arguments or prompt user
     if file_path is None:
         if len(sys.argv) > 1:
             file_path = sys.argv[1]
         else:
-            file_path = "./preprocessed_data/epiq7/1.2.840.113654.2.70.1.173304721797905812758989059075929126362"
+            print("DICOM Interactive Debug Scaling Tool")
+            print("=" * 50)
+            print("This tool provides interactive debugging for DICOM scaling issues.")
+            print("You can step through the scaling process and examine each stage.")
+            print("")
+            file_path = input("Please enter the path to the DICOM file: ").strip()
+            
+            if not file_path:
+                print("No file path provided. Exiting.")
+                return
     
     print(f"Starting interactive debug script for file: {file_path}")
     
     if not os.path.exists(file_path):
-        print(f"File not found: {file_path}")
+        print(f"Error: File not found: {file_path}")
         return
     
     try:
