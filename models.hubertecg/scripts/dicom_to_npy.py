@@ -195,32 +195,36 @@ def normalize_ecg_data(ecg_data, target_length=5000, target_leads=12):
     return ecg_data.astype(np.float64)
 
 
-def process_dicom_files(input_dir, output_dir):
+def process_patient_folder(patient_dir, output_dir):
     """
-    Process all DICOM files in the input directory and save as NPY files.
+    Process all DICOM files in a single patient directory.
     
     Args:
-        input_dir (str): Directory containing DICOM files
-        output_dir (str): Directory to save NPY files
+        patient_dir (str): Directory containing DICOM files for one patient
+        output_dir (str): Directory to save NPY files for this patient
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    patient_name = os.path.basename(patient_dir)
+    print(f"\nProcessing patient: {patient_name}")
     
-    # Find all DICOM files
+    # Create patient-specific output directory
+    patient_output_dir = os.path.join(output_dir, patient_name)
+    os.makedirs(patient_output_dir, exist_ok=True)
+    
+    # Find all DICOM files in this patient directory
     dicom_files = []
-    for file in os.listdir(input_dir):
+    for file in os.listdir(patient_dir):
         if file.lower().endswith(('.dcm', '.dicom')):
-            dicom_files.append(os.path.join(input_dir, file))
+            dicom_files.append(os.path.join(patient_dir, file))
     
     if not dicom_files:
-        print(f"No DICOM files found in {input_dir}")
-        return
+        print(f"  No DICOM files found in {patient_dir}")
+        return 0
     
-    print(f"Found {len(dicom_files)} DICOM files")
+    print(f"  Found {len(dicom_files)} DICOM files")
     
     successful_conversions = 0
     
-    for dicom_path in tqdm(dicom_files, desc="Processing DICOM files"):
+    for dicom_path in dicom_files:
         # Extract ECG data
         ecg_data, sampling_rate, num_leads = extract_ecg_from_dicom(dicom_path)
         
@@ -232,28 +236,69 @@ def process_dicom_files(input_dir, output_dir):
                 # Create output filename
                 base_name = os.path.splitext(os.path.basename(dicom_path))[0]
                 output_filename = f"{base_name}.npy"
-                output_path = os.path.join(output_dir, output_filename)
+                output_path = os.path.join(patient_output_dir, output_filename)
                 
                 # Save as NPY file
                 np.save(output_path, normalized_data)
-                print(f"  Saved: {output_filename} with shape {normalized_data.shape}")
+                print(f"    Saved: {output_filename} with shape {normalized_data.shape}")
                 successful_conversions += 1
             else:
-                print(f"  Failed to normalize data for {os.path.basename(dicom_path)}")
+                print(f"    Failed to normalize data for {os.path.basename(dicom_path)}")
         else:
-            print(f"  Failed to extract ECG data from {os.path.basename(dicom_path)}")
-        
-        print()  # Add blank line for readability
+            print(f"    Failed to extract ECG data from {os.path.basename(dicom_path)}")
     
-    print(f"Successfully converted {successful_conversions} out of {len(dicom_files)} DICOM files")
+    print(f"  Patient {patient_name}: {successful_conversions}/{len(dicom_files)} files converted successfully")
+    return successful_conversions
+
+
+def process_all_patients(data_dir, output_dir):
+    """
+    Process all patient folders in the data directory.
+    
+    Args:
+        data_dir (str): Directory containing patient folders
+        output_dir (str): Directory to save processed NPY files
+    """
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Find all patient directories
+    patient_dirs = []
+    for item in os.listdir(data_dir):
+        item_path = os.path.join(data_dir, item)
+        if os.path.isdir(item_path) and not item.startswith('.') and item != '__pycache__':
+            patient_dirs.append(item_path)
+    
+    if not patient_dirs:
+        print(f"No patient directories found in {data_dir}")
+        return
+    
+    print(f"Found {len(patient_dirs)} patient directories: {[os.path.basename(d) for d in patient_dirs]}")
+    
+    total_successful = 0
+    total_files = 0
+    
+    for patient_dir in patient_dirs:
+        successful = process_patient_folder(patient_dir, output_dir)
+        total_successful += successful
+        
+        # Count total files in this patient directory
+        patient_files = len([f for f in os.listdir(patient_dir) if f.lower().endswith(('.dcm', '.dicom'))])
+        total_files += patient_files
+    
+    print(f"\n=== SUMMARY ===")
+    print(f"Total patients processed: {len(patient_dirs)}")
+    print(f"Total DICOM files: {total_files}")
+    print(f"Successfully converted: {total_successful}")
+    print(f"Success rate: {total_successful/total_files*100:.1f}%" if total_files > 0 else "No files to process")
 
 
 def main():
     parser = argparse.ArgumentParser(description='Convert DICOM ECG files to NPY format for HuBERT-ECG.')
-    parser.add_argument('--input_dir', type=str, default='data/12L',
-                        help='Directory containing DICOM files (default: data/12L)')
-    parser.add_argument('--output_dir', type=str, default='data/12L/processed',
-                        help='Directory to save NPY files (default: data/12L/processed)')
+    parser.add_argument('--input_dir', type=str, default='raw',
+                        help='Directory containing patient folders with DICOM files (default: raw)')
+    parser.add_argument('--output_dir', type=str, default='data',
+                        help='Directory to save NPY files (default: data)')
     
     args = parser.parse_args()
     
@@ -262,7 +307,7 @@ def main():
         sys.exit(1)
     
     print(f"Converting DICOM files from {args.input_dir} to NPY format in {args.output_dir}")
-    process_dicom_files(args.input_dir, args.output_dir)
+    process_all_patients(args.input_dir, args.output_dir)
 
 
 if __name__ == "__main__":

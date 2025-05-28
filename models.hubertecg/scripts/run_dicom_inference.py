@@ -21,8 +21,8 @@ import torch
 from tqdm import tqdm
 from transformers import AutoModel
 
-# Add the code directory to the path
-sys.path.append('code')
+# Add the training/models directory to the path
+sys.path.append('training/models')
 sys.path.append('.')
 
 # Import HuBERT-ECG modules
@@ -127,43 +127,50 @@ def load_model(model_size='base', device='cpu'):
         return None
 
 
-def process_npy_files(input_dir, output_dir, model, device):
+def process_patient_npy_files(patient_dir, output_dir, model, device):
     """
-    Process all NPY files in the input directory and run inference.
+    Process all NPY files in a single patient directory.
     
     Args:
-        input_dir (str): Directory containing NPY files
-        output_dir (str): Directory to save results
+        patient_dir (str): Directory containing NPY files for one patient
+        output_dir (str): Directory to save results for this patient
         model: Pre-trained HuBERT-ECG model
         device (str): Device for computation
+        
+    Returns:
+        list: Results for this patient
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    patient_name = os.path.basename(patient_dir)
+    print(f"\nProcessing patient: {patient_name}")
     
-    # Find all NPY files
+    # Create patient-specific output directory
+    patient_output_dir = os.path.join(output_dir, patient_name)
+    os.makedirs(patient_output_dir, exist_ok=True)
+    
+    # Find all NPY files in this patient directory
     npy_files = []
-    for file in os.listdir(input_dir):
+    for file in os.listdir(patient_dir):
         if file.lower().endswith('.npy'):
-            npy_files.append(os.path.join(input_dir, file))
+            npy_files.append(os.path.join(patient_dir, file))
     
     if not npy_files:
-        print(f"No NPY files found in {input_dir}")
-        return
+        print(f"  No NPY files found in {patient_dir}")
+        return []
     
-    print(f"Found {len(npy_files)} NPY files")
+    print(f"  Found {len(npy_files)} NPY files")
     
     results = []
     
-    for npy_path in tqdm(npy_files, desc="Processing NPY files"):
+    for npy_path in npy_files:
         try:
             # Load ECG data
             ecg_data = np.load(npy_path)
-            print(f"\nProcessing: {os.path.basename(npy_path)}")
-            print(f"  Original shape: {ecg_data.shape}")
+            print(f"    Processing: {os.path.basename(npy_path)}")
+            print(f"      Original shape: {ecg_data.shape}")
             
             # Preprocess ECG data
             preprocessed_ecg = preprocess_ecg(ecg_data)
-            print(f"  Preprocessed shape: {preprocessed_ecg.shape}")
+            print(f"      Preprocessed shape: {preprocessed_ecg.shape}")
             
             # Run inference
             with torch.no_grad():
@@ -173,39 +180,41 @@ def process_npy_files(input_dir, output_dir, model, device):
                 if hasattr(outputs, 'last_hidden_state'):
                     # If it's a transformer output, get the last hidden state
                     features = outputs.last_hidden_state
-                    print(f"  Features shape: {features.shape}")
+                    print(f"      Features shape: {features.shape}")
                 elif isinstance(outputs, torch.Tensor):
                     # If it's a direct tensor output
                     features = outputs
-                    print(f"  Output shape: {features.shape}")
+                    print(f"      Output shape: {features.shape}")
                 else:
                     # If it's a tuple or other structure, take the first element
                     features = outputs[0] if isinstance(outputs, (tuple, list)) else outputs
-                    print(f"  Output shape: {features.shape}")
+                    print(f"      Output shape: {features.shape}")
             
             # Save results
             base_name = os.path.splitext(os.path.basename(npy_path))[0]
             
             # Save features as NPY
-            features_path = os.path.join(output_dir, f"{base_name}_features.npy")
+            features_path = os.path.join(patient_output_dir, f"{base_name}_features.npy")
             features_cpu = features.cpu().numpy()
             np.save(features_path, features_cpu)
             
             # Store metadata for CSV
             results.append({
+                'patient': patient_name,
                 'filename': os.path.basename(npy_path),
                 'original_shape': str(ecg_data.shape),
                 'preprocessed_shape': str(preprocessed_ecg.shape),
                 'features_shape': str(features_cpu.shape),
-                'features_file': f"{base_name}_features.npy",
+                'features_file': f"{patient_name}/{base_name}_features.npy",
                 'status': 'success'
             })
             
-            print(f"  Saved features to: {features_path}")
+            print(f"      Saved features to: {features_path}")
             
         except Exception as e:
-            print(f"  Error processing {os.path.basename(npy_path)}: {e}")
+            print(f"      Error processing {os.path.basename(npy_path)}: {e}")
             results.append({
+                'patient': patient_name,
                 'filename': os.path.basename(npy_path),
                 'original_shape': 'N/A',
                 'preprocessed_shape': 'N/A',
@@ -214,18 +223,62 @@ def process_npy_files(input_dir, output_dir, model, device):
                 'status': f'error: {str(e)}'
             })
     
-    # Save results summary
-    results_df = pd.DataFrame(results)
-    results_csv_path = os.path.join(output_dir, 'inference_results.csv')
-    results_df.to_csv(results_csv_path, index=False)
-    print(f"\nResults summary saved to: {results_csv_path}")
+    print(f"  Patient {patient_name}: {len([r for r in results if r['status'] == 'success'])}/{len(npy_files)} files processed successfully")
+    return results
+
+
+def process_all_patients_npy(input_dir, output_dir, model, device):
+    """
+    Process all patient folders containing NPY files and run inference.
+    
+    Args:
+        input_dir (str): Directory containing patient folders with NPY files
+        output_dir (str): Directory to save results
+        model: Pre-trained HuBERT-ECG model
+        device (str): Device for computation
+    """
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Find all patient directories
+    patient_dirs = []
+    for item in os.listdir(input_dir):
+        item_path = os.path.join(input_dir, item)
+        if os.path.isdir(item_path) and not item.startswith('.') and item != '__pycache__':
+            patient_dirs.append(item_path)
+    
+    if not patient_dirs:
+        print(f"No patient directories found in {input_dir}")
+        return
+    
+    print(f"Found {len(patient_dirs)} patient directories: {[os.path.basename(d) for d in patient_dirs]}")
+    
+    all_results = []
+    total_successful = 0
+    total_files = 0
+    
+    for patient_dir in patient_dirs:
+        patient_results = process_patient_npy_files(patient_dir, output_dir, model, device)
+        all_results.extend(patient_results)
+        
+        # Count successes and total files
+        patient_successful = len([r for r in patient_results if r['status'] == 'success'])
+        total_successful += patient_successful
+        total_files += len(patient_results)
+    
+    # Save combined results summary
+    if all_results:
+        results_df = pd.DataFrame(all_results)
+        results_csv_path = os.path.join(output_dir, 'inference_results.csv')
+        results_df.to_csv(results_csv_path, index=False)
+        print(f"\nResults summary saved to: {results_csv_path}")
     
     # Print summary
-    successful = len([r for r in results if r['status'] == 'success'])
-    print(f"\nSummary:")
-    print(f"  Total files: {len(npy_files)}")
-    print(f"  Successful: {successful}")
-    print(f"  Failed: {len(npy_files) - successful}")
+    print(f"\n=== SUMMARY ===")
+    print(f"Total patients processed: {len(patient_dirs)}")
+    print(f"Total NPY files: {total_files}")
+    print(f"Successfully processed: {total_successful}")
+    print(f"Success rate: {total_successful/total_files*100:.1f}%" if total_files > 0 else "No files to process")
 
 
 def analyze_features(output_dir):
@@ -273,10 +326,10 @@ def analyze_features(output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Run HuBERT-ECG inference on converted DICOM NPY files.')
-    parser.add_argument('--input_dir', type=str, default='data/12L/processed',
-                        help='Directory containing NPY files (default: data/12L/processed)')
-    parser.add_argument('--output_dir', type=str, default='data/12L/inference_results',
-                        help='Directory to save inference results (default: data/12L/inference_results)')
+    parser.add_argument('--input_dir', type=str, default='data',
+                        help='Directory containing NPY files (default: data)')
+    parser.add_argument('--output_dir', type=str, default='results',
+                        help='Directory to save inference results (default: results)')
     parser.add_argument('--model_size', type=str, default='base', choices=['small', 'base', 'large'],
                         help='HuBERT-ECG model size (default: base)')
     parser.add_argument('--analyze_only', action='store_true',
@@ -307,7 +360,7 @@ def main():
     print(f"Results will be saved to {args.output_dir}")
     
     # Process files
-    process_npy_files(args.input_dir, args.output_dir, model, device)
+    process_all_patients_npy(args.input_dir, args.output_dir, model, device)
     
     # Analyze results
     analyze_features(args.output_dir)

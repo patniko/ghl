@@ -1,5 +1,5 @@
 """
-Echocardiogram study data.
+Data module for EchoPrime.
 
-This package contains echocardiogram study data organized by device type.
+This module contains sample data and datasets for testing and development.
 """

@@ -24,11 +24,12 @@ __MACOSX/._model_data
 test_output/
 
 
+models.echoquality/raw/
 models.echoquality/data/
 models.echoquality/weights/
 models.echoquality/results/fail*
-models.echoprime/data/example_study/
 models.echoprime/weights/
+models.echoprime/raw/
 models.echoprime/data/
 models.echoprime/results/
 models.echoprime/dicom_analysis_results.json
