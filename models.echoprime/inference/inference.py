@@ -119,7 +119,7 @@ class EchoPrimeInference:
         """Load MIL weights per section."""
         print("Loading MIL weights...")
         
-        mil_weights = pd.read_csv("MIL_weights.csv")
+        mil_weights = pd.read_csv("./weights/MIL_weights.csv")
         self.non_empty_sections = mil_weights['Section']
         self.section_weights = mil_weights.iloc[:, 1:].to_numpy()
         

@@ -95,14 +95,14 @@ jupyter:
 
 .PHONY: inference
 inference:
-	@echo "${YELLOW}Running EchoPrime inference on all folders in data/ directory...${NC}"
-	@$(POETRY) run python -m inference.inference --data_dir ./data --output ./results/inference_output
+	@echo "${YELLOW}Running EchoPrime inference on all folders in raw/ directory...${NC}"
+	@$(POETRY) run python -m inference.inference --data_dir ./raw --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
 
 .PHONY: inference-per-patient
 inference-per-patient:
 	@echo "${YELLOW}Running EchoPrime inference on individual patients...${NC}"
-	@$(POETRY) run python -m inference.inference_per_patient --data_dir ./data --output ./results/inference_output_per_patient
+	@$(POETRY) run python -m inference.inference_per_patient --data_dir ./raw --output ./results/inference_output_per_patient
 	@echo "${GREEN}Per-patient inference complete! Results saved to ./results/inference_output_per_patient${NC}"
 
 # Docker commands

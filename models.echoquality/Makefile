@@ -75,8 +75,8 @@ train:
 
 .PHONY: inference
 inference:
-	@echo "${YELLOW}Running EchoQuality inference on all folders in data/ directory...${NC}"
-	@$(POETRY) run python -m inference.inference --data_dir ./data --output ./results/inference_output
+	@echo "${YELLOW}Running EchoQuality inference on all folders in raw/ directory...${NC}"
+	@$(POETRY) run python -m inference.inference --data_dir ./raw --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
 
 .PHONY: quality-check

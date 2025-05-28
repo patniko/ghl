@@ -59,13 +59,15 @@ class EchoQualityInference:
         self.model.eval()
         print("Model loaded successfully!")
 
-    def process_dicom(self, dicom_path, save_mask_images=False):
+    def process_dicom(self, dicom_path, save_mask_images=False, save_extracted_images=False, extracted_images_dir=None):
         """
         Process a single DICOM file and prepare it for the model.
         
         Args:
             dicom_path (str): Path to the DICOM file
             save_mask_images (bool): Whether to save mask images
+            save_extracted_images (bool): Whether to save extracted images to data directory
+            extracted_images_dir (str): Directory to save extracted images
             
         Returns:
             torch.Tensor: Processed video tensor
@@ -87,6 +89,25 @@ class EchoQualityInference:
             # Mask everything outside ultrasound region
             filename = os.path.basename(dicom_path)
             pixels = mask_outside_ultrasound(pixels, filename if save_mask_images else None, save_mask_images)
+            
+            # Save extracted images to data directory if requested
+            if save_extracted_images and extracted_images_dir:
+                os.makedirs(extracted_images_dir, exist_ok=True)
+                base_filename = os.path.splitext(filename)[0]
+                
+                # Save a few sample frames as images
+                sample_indices = np.linspace(0, len(pixels)-1, min(5, len(pixels)), dtype=int)
+                for idx, frame_idx in enumerate(sample_indices):
+                    frame = pixels[frame_idx]
+                    # Convert to uint8 for saving
+                    if frame.max() > 1.0:
+                        frame_uint8 = np.clip(frame, 0, 255).astype(np.uint8)
+                    else:
+                        frame_uint8 = (frame * 255).astype(np.uint8)
+                    
+                    # Save as PNG
+                    frame_path = os.path.join(extracted_images_dir, f"{base_filename}_frame_{idx:02d}.png")
+                    cv2.imwrite(frame_path, frame_uint8)
             
             # Model specific preprocessing
             x = np.zeros((len(pixels), video_size, video_size, 3))
@@ -122,7 +143,7 @@ class EchoQualityInference:
             print(f"Error processing {dicom_path}: {str(e)}")
             return None
 
-    def run_inference_on_folder(self, folder_path, threshold=0.3, save_dir=None, generate_gradcam=False):
+    def run_inference_on_folder(self, folder_path, threshold=0.3, save_dir=None, generate_gradcam=False, save_extracted_images=False, extracted_images_dir=None):
         """
         Run inference on all DICOM files in a folder.
         
@@ -131,6 +152,8 @@ class EchoQualityInference:
             threshold (float): Threshold for binary classification
             save_dir (str, optional): Directory to save results and visualizations
             generate_gradcam (bool): Whether to generate GradCAM visualizations
+            save_extracted_images (bool): Whether to save extracted images to data directory
+            extracted_images_dir (str): Directory to save extracted images
             
         Returns:
             dict: Dictionary of results
@@ -155,7 +178,12 @@ class EchoQualityInference:
             filename = os.path.basename(dicom_path)
             
             # Process DICOM file
-            video = self.process_dicom(dicom_path, save_mask_images=(save_dir is not None))
+            video = self.process_dicom(
+                dicom_path, 
+                save_mask_images=(save_dir is not None),
+                save_extracted_images=save_extracted_images,
+                extracted_images_dir=extracted_images_dir
+            )
             
             if video is None:
                 print(f"Skipping {filename}: Processing failed")
@@ -266,12 +294,17 @@ class EchoQualityInference:
                 folder_save_dir = os.path.join(save_dir, folder_name)
                 os.makedirs(folder_save_dir, exist_ok=True)
             
+            # Create data directory for extracted images
+            data_save_dir = os.path.join("data", folder_name)
+            
             # Run inference on folder
             inference_result = self.run_inference_on_folder(
                 folder_path, 
                 threshold=threshold, 
                 save_dir=folder_save_dir,
-                generate_gradcam=generate_gradcam
+                generate_gradcam=generate_gradcam,
+                save_extracted_images=True,
+                extracted_images_dir=data_save_dir
             )
             
             if "error" in inference_result:
