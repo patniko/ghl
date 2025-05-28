@@ -20,16 +20,13 @@ help:
 	@echo "${YELLOW}EchoPrime Makefile Commands:${NC}"
 	@echo ""
 	@echo "${GREEN}Setup Commands:${NC}"
-	@echo "  make setup              Setup Poetry environment"
-	@echo "  make setup-legacy       Setup environment using requirements.txt"
-	@echo "  make download-data      Download model data and embeddings"
-	@echo "  make all                Setup environment and download data"
-	@echo "  make setup-and-run      Setup, download data, and run Jupyter"
+	@echo "  make setup-all          Setup environment and download weights"
+	@echo "  make init              Setup Poetry environment"
+	@echo "  make download-weights   Download model weights and embeddings"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make inference          Run inference on all folders in data/ directory"
-	@echo "  make inference-per-patient  Run inference on individual patients with device analysis"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -42,50 +39,49 @@ help:
 	@echo "  make jupyter JUPYTER_PORT=8889"
 
 # Setup commands
-.PHONY: setup
+.PHONY: init
 setup:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
 
-.PHONY: setup-legacy
-setup-legacy:
-	@echo "${YELLOW}Setting up environment using requirements.txt...${NC}"
-	@$(PYTHON) -m pip install -r requirements.txt
-	@echo "${GREEN}Environment setup complete!${NC}"
-
-.PHONY: download-data
-download-data:
-	@echo "${YELLOW}Downloading model data and embeddings...${NC}"
-	@if [ ! -d "model_data" ] || [ ! -f "model_data/weights/echo_prime_encoder.pt" ]; then \
+.PHONY: download-weights
+download-weights:
+	@echo "${YELLOW}Downloading model weights and embeddings...${NC}"
+	@mkdir -p weights/candidates_data
+	@if [ ! -f "weights/echo_prime_encoder.pt" ]; then \
 		echo "Downloading model_data.zip..."; \
 		wget -q --show-progress $(MODEL_DATA_URL); \
 		echo "Extracting model_data.zip..."; \
 		unzip -q model_data.zip; \
+		echo "Moving weights to weights/ directory..."; \
+		mv model_data/weights/* weights/; \
+		mv model_data/candidates_data/* weights/candidates_data/ 2>/dev/null || true; \
+		rm -rf model_data; \
 		rm model_data.zip; \
 	else \
-		echo "model_data directory already exists with weights."; \
+		echo "weights directory already exists with echo_prime_encoder.pt."; \
 	fi
 	
-	@if [ ! -f "model_data/candidates_data/candidate_embeddings_p1.pt" ]; then \
+	@if [ ! -f "weights/candidates_data/candidate_embeddings_p1.pt" ]; then \
 		echo "Downloading candidate_embeddings_p1.pt..."; \
 		wget -q --show-progress $(EMBEDDING_P1_URL); \
-		echo "Moving candidate_embeddings_p1.pt to model_data/candidates_data/"; \
-		mv candidate_embeddings_p1.pt model_data/candidates_data/; \
+		echo "Moving candidate_embeddings_p1.pt to weights/candidates_data/"; \
+		mv candidate_embeddings_p1.pt weights/candidates_data/; \
 	else \
 		echo "candidate_embeddings_p1.pt already exists."; \
 	fi
 	
-	@if [ ! -f "model_data/candidates_data/candidate_embeddings_p2.pt" ]; then \
+	@if [ ! -f "weights/candidates_data/candidate_embeddings_p2.pt" ]; then \
 		echo "Downloading candidate_embeddings_p2.pt..."; \
 		wget -q --show-progress $(EMBEDDING_P2_URL); \
-		echo "Moving candidate_embeddings_p2.pt to model_data/candidates_data/"; \
-		mv candidate_embeddings_p2.pt model_data/candidates_data/; \
+		echo "Moving candidate_embeddings_p2.pt to weights/candidates_data/"; \
+		mv candidate_embeddings_p2.pt weights/candidates_data/; \
 	else \
 		echo "candidate_embeddings_p2.pt already exists."; \
 	fi
 	
-	@echo "${GREEN}Model data and embeddings download complete!${NC}"
+	@echo "${GREEN}Model weights and embeddings download complete!${NC}"
 
 # Run commands
 .PHONY: jupyter
@@ -98,12 +94,6 @@ inference:
 	@echo "${YELLOW}Running EchoPrime inference on all folders in raw/ directory...${NC}"
 	@$(POETRY) run python -m inference.inference --data_dir ./raw --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
-
-.PHONY: inference-per-patient
-inference-per-patient:
-	@echo "${YELLOW}Running EchoPrime inference on individual patients...${NC}"
-	@$(POETRY) run python -m inference.inference_per_patient --data_dir ./raw --output ./results/inference_output_per_patient
-	@echo "${GREEN}Per-patient inference complete! Results saved to ./results/inference_output_per_patient${NC}"
 
 # Docker commands
 .PHONY: build-docker
@@ -138,12 +128,8 @@ clean:
 	@echo "${GREEN}Cleanup complete!${NC}"
 
 # All-in-one setup command
-.PHONY: all
-all: setup download-data
-
-# All-in-one setup and run command
-.PHONY: setup-and-run
-setup-and-run: all jupyter
+.PHONY: setup-all
+all: setup download-weights
 
 # Default target
 .DEFAULT_GOAL := help

@@ -18,23 +18,18 @@ help:
 	@echo ""
 	@echo "${GREEN}Setup Commands:${NC}"
 	@echo "  make setup              Setup Poetry environment"
-	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
-	@echo "  make update-lock        Update poetry.lock file"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make train              Run model training with default parameters"
 	@echo "  make inference          Run inference on all folders in data/ directory"
-	@echo "  make quality-check      Run quality assessment on study data"
+
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
 	@echo "  make build-jupyter      Build the Docker image for Jupyter"
 	@echo "  make run-docker         Run Docker container"
 	@echo "  make run-jupyter        Run Jupyter Docker container"
-	@echo ""
-	@echo "${GREEN}MLflow Commands:${NC}"
-	@echo "  make mlflow-server      Start MLflow tracking server"
 	@echo ""
 	@echo "${GREEN}Utility Commands:${NC}"
 	@echo "  make clean              Clean up temporary files"
@@ -48,18 +43,6 @@ setup:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
-
-.PHONY: setup-dev
-setup-dev:
-	@echo "${YELLOW}Setting up Poetry environment with dev dependencies...${NC}"
-	@$(POETRY) install --with dev
-	@echo "${GREEN}Development environment setup complete!${NC}"
-
-.PHONY: update-lock
-update-lock:
-	@echo "${YELLOW}Updating poetry.lock file...${NC}"
-	@$(POETRY) lock --no-update
-	@echo "${GREEN}poetry.lock file updated!${NC}"
 
 # Run commands
 .PHONY: jupyter
@@ -78,12 +61,6 @@ inference:
 	@echo "${YELLOW}Running EchoQuality inference on all folders in raw/ directory...${NC}"
 	@$(POETRY) run python -m inference.inference --data_dir ./raw --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
-
-.PHONY: quality-check
-quality-check:
-	@echo "${YELLOW}Running quality assessment on study data...${NC}"
-	@$(POETRY) run python -m inference.EchoPrime_qc --study_data
-	@echo "${GREEN}Quality assessment complete! Results saved to quality_results.json${NC}"
 
 # Docker commands
 .PHONY: build-docker
@@ -111,13 +88,6 @@ run-jupyter:
 	@echo "${YELLOW}Running Jupyter Docker container...${NC}"
 	@docker run -it --rm -p $(JUPYTER_PORT):8888 -v $(PWD):/workspace echoquality-jupyter
 	@echo "${GREEN}Jupyter Docker container started!${NC}"
-
-# MLflow commands
-.PHONY: mlflow-server
-mlflow-server:
-	@echo "${YELLOW}Starting MLflow tracking server...${NC}"
-	@$(POETRY) run mlflow server --host 127.0.0.1 --port 5000
-	@echo "${GREEN}MLflow server started at http://127.0.0.1:5000${NC}"
 
 # Utility commands
 .PHONY: clean
