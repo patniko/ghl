@@ -39,11 +39,7 @@ venv.bak/
 *.swo
 
 # Project specific
-results/mask_images/
-results/debug_images/
-results/debug_images_visual/
-results/debug_images_interactive/
-results/debug_images_specialized/
+results/
 quality_results.json
 gradcam_visualization.png
 results/inference_output/

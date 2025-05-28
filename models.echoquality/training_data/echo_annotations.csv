@@ -1,0 +1,4 @@
+video_path,quality_score
+echo_videos/video1.dcm,1
+echo_videos/video2.dcm,0
+echo_videos/video3.dcm,1
