@@ -1,0 +1,4 @@
+patient,filename,original_shape,preprocessed_shape,features_shape,features_file,status
+PATIENTA,9C687DB1.npy,"(12, 5000)","torch.Size([1, 12000])","(1, 187, 768)",PATIENTA/9C687DB1_features.npy,success
+PATIENTB,75C6B3C1.npy,"(12, 5000)","torch.Size([1, 12000])","(1, 187, 768)",PATIENTB/75C6B3C1_features.npy,success
+PATIENTC,93C7C5AD.npy,"(12, 5000)","torch.Size([1, 12000])","(1, 187, 768)",PATIENTC/93C7C5AD_features.npy,success

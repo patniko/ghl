@@ -34,8 +34,8 @@ RUN mkdir -p /root/.jupyter && \
     echo "c.NotebookApp.token = ''" >> /root/.jupyter/jupyter_notebook_config.py && \
     echo "c.NotebookApp.password = ''" >> /root/.jupyter/jupyter_notebook_config.py
 
-# Create directories for mask images and model data if they don't exist
-RUN mkdir -p mask_images/original mask_images/before mask_images/after model_data/example_study
+# Create directories for project structure if they don't exist
+RUN mkdir -p results/mask_images/original results/mask_images/before results/mask_images/after preprocessed_data/example_study weights
 
 # Expose port for Jupyter
 EXPOSE 8888

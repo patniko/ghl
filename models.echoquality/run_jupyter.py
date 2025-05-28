@@ -20,19 +20,19 @@ def main():
     parser.add_argument("--ip", type=str, default="127.0.0.1", help="IP address to bind to")
     args = parser.parse_args()
     
-    # Ensure mask_images directory exists
-    mask_dir = Path("mask_images")
+    # Ensure mask_images directory exists in results
+    mask_dir = Path("results/mask_images")
     if not mask_dir.exists():
         os.makedirs(mask_dir / "original", exist_ok=True)
         os.makedirs(mask_dir / "before", exist_ok=True)
         os.makedirs(mask_dir / "after", exist_ok=True)
         print(f"Created mask_images directory at {mask_dir.absolute()}")
     
-    # Ensure model_data directory exists
-    model_data_dir = Path("model_data")
-    if not model_data_dir.exists():
-        os.makedirs(model_data_dir / "example_study", exist_ok=True)
-        print(f"Created model_data directory at {model_data_dir.absolute()}")
+    # Ensure preprocessed_data directory exists
+    data_dir = Path("preprocessed_data")
+    if not data_dir.exists():
+        os.makedirs(data_dir / "example_study", exist_ok=True)
+        print(f"Created preprocessed_data directory at {data_dir.absolute()}")
     
     # Build command
     cmd = [

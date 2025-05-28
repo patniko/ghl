@@ -21,7 +21,7 @@ wheels/
 *.egg
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # Environment
 .env
@@ -39,11 +39,15 @@ venv.bak/
 *.swo
 
 # Project specific
-mask_images/
+results/mask_images/
+results/debug_images/
+results/debug_images_visual/
+results/debug_images_interactive/
+results/debug_images_specialized/
 quality_results.json
 gradcam_visualization.png
-inference_output/
-trained_models/
+results/inference_output/
+weights/trained_models/
 
 # MLflow
 mlruns/
@@ -59,3 +63,5 @@ mlruns/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+data/*.dcm

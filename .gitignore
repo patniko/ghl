@@ -22,3 +22,16 @@ model_data/
 *.pyc
 __MACOSX/._model_data
 test_output/
+
+
+models.echoquality/raw_data/
+models.echoquality/preprocessed_data/
+models.echoquality/weights/
+models.echoquality/results/fail*
+models.echoprime/weights/
+models.echoprime/raw_data/
+models.echoprime/preprocessed_data/
+models.echoprime/results/
+models.echoprime/dicom_analysis_results.json
+models.echoprime/data_organized/
+models.echoprime/data-old/

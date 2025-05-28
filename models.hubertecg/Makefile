@@ -20,9 +20,14 @@ help:
 	@echo "  make setup              Setup Poetry environment"
 	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
 	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
+	@echo "  make dicom-prep        Convert DICOM ECG files to NPY format"
+	@echo "  make dicom-inference    Run HuBERT-ECG inference on converted DICOM files"
+	@echo "  make dicom-metadata     Extract comprehensive metadata from DICOM files"
+	@echo "  make dicom-visualize    Create ECG signal visualizations"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
+	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-jupyter      Build the Docker image for Jupyter"
@@ -51,6 +56,41 @@ ptbxl-setup:
 	@echo "${YELLOW}Setting up PTB-XL dataset...${NC}"
 	@$(POETRY) run python scripts/setup_ptbxl.py
 	@echo "${GREEN}PTB-XL dataset setup complete!${NC}"
+
+.PHONY: dicom-prep
+dicom-setup:
+	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
+	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${GREEN}DICOM conversion complete!${NC}"
+
+.PHONY: dicom-inference
+dicom-inference:
+	@echo "${YELLOW}Running HuBERT-ECG inference on converted DICOM files...${NC}"
+	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
+	@echo "${GREEN}DICOM inference complete!${NC}"
+
+.PHONY: inference
+inference:
+	@echo "${YELLOW}Cleaning results and preprocessed_data for clean run...${NC}"
+	@rm -rf ./results/*
+	@rm -rf ./preprocessed_data/*
+	@echo "${YELLOW}Converting DICOM files to NPY format...${NC}"
+	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
+	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
+	@echo "${GREEN}Inference complete! Results saved to ./results${NC}"
+
+.PHONY: dicom-metadata
+dicom-metadata:
+	@echo "${YELLOW}Extracting comprehensive metadata from DICOM files...${NC}"
+	@$(POETRY) run python scripts/dump_dicom_metadata.py
+	@echo "${GREEN}DICOM metadata extraction complete!${NC}"
+
+.PHONY: dicom-visualize
+dicom-visualize:
+	@echo "${YELLOW}Creating ECG signal visualizations...${NC}"
+	@$(POETRY) run python scripts/visualize_ecg_signals.py
+	@echo "${GREEN}ECG visualization complete!${NC}"
 
 # Run commands
 .PHONY: jupyter

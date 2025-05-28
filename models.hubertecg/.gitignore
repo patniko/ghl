@@ -27,7 +27,8 @@ wheels/
 poetry.lock
 
 # Data
-data/
+raw_data/
+preprocessed_data/
 
 # Virtual Environment
 venv/
