@@ -27,6 +27,7 @@ help:
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
+	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-jupyter      Build the Docker image for Jupyter"
@@ -59,14 +60,25 @@ ptbxl-setup:
 .PHONY: dicom-setup
 dicom-setup:
 	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
-	@$(POETRY) run python scripts/dicom_to_npy.py
+	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${GREEN}DICOM conversion complete!${NC}"
 
 .PHONY: dicom-inference
 dicom-inference:
 	@echo "${YELLOW}Running HuBERT-ECG inference on converted DICOM files...${NC}"
-	@$(POETRY) run python scripts/run_dicom_inference.py
+	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
 	@echo "${GREEN}DICOM inference complete!${NC}"
+
+.PHONY: inference
+inference:
+	@echo "${YELLOW}Cleaning results and preprocessed_data for clean run...${NC}"
+	@rm -rf ./results/*
+	@rm -rf ./preprocessed_data/*
+	@echo "${YELLOW}Converting DICOM files to NPY format...${NC}"
+	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
+	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
+	@echo "${GREEN}Inference complete! Results saved to ./results${NC}"
 
 .PHONY: dicom-metadata
 dicom-metadata:

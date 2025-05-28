@@ -3,7 +3,7 @@
 Script to convert DICOM ECG files to NPY format for use with HuBERT-ECG.
 
 This script:
-1. Reads DICOM files from the data/12L directory
+1. Reads DICOM files from the raw_data/12L directory
 2. Extracts ECG waveform data
 3. Normalizes and resamples the data to match the expected format
 4. Saves as .npy files compatible with HuBERT-ECG
@@ -295,10 +295,10 @@ def process_all_patients(data_dir, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Convert DICOM ECG files to NPY format for HuBERT-ECG.')
-    parser.add_argument('--input_dir', type=str, default='raw',
-                        help='Directory containing patient folders with DICOM files (default: raw)')
-    parser.add_argument('--output_dir', type=str, default='data',
-                        help='Directory to save NPY files (default: data)')
+    parser.add_argument('--input_dir', type=str, default='raw_data',
+                        help='Directory containing patient folders with DICOM files (default: raw_data)')
+    parser.add_argument('--output_dir', type=str, default='preprocessed_data',
+                        help='Directory to save NPY files (default: preprocessed_data)')
     
     args = parser.parse_args()
     

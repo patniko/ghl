@@ -85,8 +85,8 @@ def process_ecg_data(data_dir, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Download and process the PTB-XL dataset for use with HuBERT-ECG.')
-    parser.add_argument('--data_dir', type=str, default='data/ptbxl',
-                        help='Directory to store the PTB-XL dataset (default: data/ptbxl)')
+    parser.add_argument('--data_dir', type=str, default='preprocessed_data/ptbxl',
+                        help='Directory to store the PTB-XL dataset (default: preprocessed_data/ptbxl)')
     
     args = parser.parse_args()
     

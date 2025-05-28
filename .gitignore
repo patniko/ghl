@@ -29,8 +29,8 @@ models.echoquality/preprocessed_data/
 models.echoquality/weights/
 models.echoquality/results/fail*
 models.echoprime/weights/
-models.echoprime/raw/
-models.echoprime/data/
+models.echoprime/raw_data/
+models.echoprime/preprocessed_data/
 models.echoprime/results/
 models.echoprime/dicom_analysis_results.json
 models.echoprime/data_organized/

@@ -387,10 +387,10 @@ def process_files(input_dir, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Create comprehensive ECG signal visualizations.')
-    parser.add_argument('--input_dir', type=str, default='data/12L',
-                        help='Directory containing DICOM files (default: data/12L)')
-    parser.add_argument('--output_dir', type=str, default='data/12L/visualizations',
-                        help='Directory to save visualizations (default: data/12L/visualizations)')
+    parser.add_argument('--input_dir', type=str, default='raw_data/12L',
+                        help='Directory containing DICOM files (default: raw_data/12L)')
+    parser.add_argument('--output_dir', type=str, default='preprocessed_data/12L/visualizations',
+                        help='Directory to save visualizations (default: preprocessed_data/12L/visualizations)')
     
     args = parser.parse_args()
     

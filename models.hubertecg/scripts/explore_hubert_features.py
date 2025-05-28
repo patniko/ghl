@@ -358,10 +358,10 @@ class HuBERTFeatureExplorer:
 
 def main():
     parser = argparse.ArgumentParser(description='Explore HuBERT-ECG feature values.')
-    parser.add_argument('--input_dir', type=str, default='data/12L/inference_results',
-                        help='Directory containing feature files (default: data/12L/inference_results)')
-    parser.add_argument('--output_dir', type=str, default='data/12L/feature_exploration',
-                        help='Directory to save analysis results (default: data/12L/feature_exploration)')
+    parser.add_argument('--input_dir', type=str, default='results/12L/inference_results',
+                        help='Directory containing feature files (default: results/12L/inference_results)')
+    parser.add_argument('--output_dir', type=str, default='results/12L/feature_exploration',
+                        help='Directory to save analysis results (default: results/12L/feature_exploration)')
     
     args = parser.parse_args()
     

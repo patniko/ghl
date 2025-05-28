@@ -231,10 +231,10 @@ def process_npy_files(input_dir, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Create comprehensive ECG signal visualizations from NPY files.')
-    parser.add_argument('--input_dir', type=str, default='data/12L/processed',
-                        help='Directory containing NPY files (default: data/12L/processed)')
-    parser.add_argument('--output_dir', type=str, default='data/12L/visualizations',
-                        help='Directory to save visualizations (default: data/12L/visualizations)')
+    parser.add_argument('--input_dir', type=str, default='preprocessed_data/12L/processed',
+                        help='Directory containing NPY files (default: preprocessed_data/12L/processed)')
+    parser.add_argument('--output_dir', type=str, default='preprocessed_data/12L/visualizations',
+                        help='Directory to save visualizations (default: preprocessed_data/12L/visualizations)')
     
     args = parser.parse_args()
     

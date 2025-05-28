@@ -369,7 +369,7 @@ class EchoPrimeInference:
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Run EchoPrime inference on device folders.")
-    parser.add_argument("--data_dir", type=str, default="data", help="Directory containing device folders")
+    parser.add_argument("--data_dir", type=str, default="raw_data", help="Directory containing device folders")
     parser.add_argument("--weights_dir", type=str, default="weights", help="Directory containing model weights")
     parser.add_argument("--output", type=str, default="results/inference_output", help="Directory to save results")
     parser.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "cuda"], help="Device to run inference on")

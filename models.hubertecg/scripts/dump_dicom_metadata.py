@@ -258,10 +258,10 @@ def process_dicom_files(input_dir, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(description='Extract comprehensive metadata from DICOM ECG files.')
-    parser.add_argument('--input_dir', type=str, default='data/12L',
-                        help='Directory containing DICOM files (default: data/12L)')
-    parser.add_argument('--output_dir', type=str, default='data/12L/metadata',
-                        help='Directory to save metadata (default: data/12L/metadata)')
+    parser.add_argument('--input_dir', type=str, default='raw_data/12L',
+                        help='Directory containing DICOM files (default: raw_data/12L)')
+    parser.add_argument('--output_dir', type=str, default='preprocessed_data/12L/metadata',
+                        help='Directory to save metadata (default: preprocessed_data/12L/metadata)')
     
     args = parser.parse_args()
     
