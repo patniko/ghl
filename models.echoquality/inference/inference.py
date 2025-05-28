@@ -404,21 +404,69 @@ class EchoQualityInference:
                     os.makedirs(extracted_images_dir, exist_ok=True)
                     base_filename = os.path.splitext(filename)[0]
                     
-                    # Save a few sample frames as images
+                    # Create subdirectories for different processing stages
+                    raw_dir = os.path.join(extracted_images_dir, "1_raw_extracted")
+                    masked_dir = os.path.join(extracted_images_dir, "2_masked")
+                    scaled_dir = os.path.join(extracted_images_dir, "3_scaled_cropped")
+                    os.makedirs(raw_dir, exist_ok=True)
+                    os.makedirs(masked_dir, exist_ok=True)
+                    os.makedirs(scaled_dir, exist_ok=True)
+                    
+                    # Save raw extracted frames (before masking)
                     sample_indices = np.linspace(0, len(pixels)-1, min(5, len(pixels)), dtype=int)
                     for idx_frame, frame_idx in enumerate(sample_indices):
-                        frame = pixels[frame_idx]
-                        # Convert to uint8 for saving
-                        if frame.max() > 1.0:
-                            frame_uint8 = np.clip(frame, 0, 255).astype(np.uint8)
-                        else:
-                            frame_uint8 = (frame * 255).astype(np.uint8)
+                        try:
+                            # Save raw frame (before masking) - use the original pixel array
+                            raw_frame = dcm.pixel_array[frame_idx]
+                            
+                            # Validate frame dimensions
+                            if raw_frame.size == 0 or raw_frame.shape[0] == 0 or raw_frame.shape[1] == 0:
+                                continue
+                                
+                            # Handle different dimensions properly
+                            if raw_frame.ndim == 2:
+                                # Grayscale - convert to 3 channel
+                                raw_frame = cv2.cvtColor(raw_frame.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+                            elif raw_frame.ndim == 3 and raw_frame.shape[2] == 1:
+                                # Single channel - repeat to 3 channels
+                                raw_frame = np.repeat(raw_frame, 3, axis=2)
+                            elif raw_frame.ndim == 3 and raw_frame.shape[2] == 3:
+                                # Already 3 channels
+                                pass
+                            else:
+                                # Skip invalid dimensions
+                                continue
+                            
+                            # Ensure valid image dimensions for PNG
+                            if raw_frame.shape[0] > 65535 or raw_frame.shape[1] > 65535:
+                                continue
+                                
+                            # Convert to uint8 for saving
+                            if raw_frame.max() > 255:
+                                raw_frame_uint8 = np.clip(raw_frame, 0, 255).astype(np.uint8)
+                            elif raw_frame.max() <= 1.0:
+                                raw_frame_uint8 = (raw_frame * 255).astype(np.uint8)
+                            else:
+                                raw_frame_uint8 = raw_frame.astype(np.uint8)
+                            
+                            # Save raw extracted frame
+                            raw_frame_path = os.path.join(raw_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                            cv2.imwrite(raw_frame_path, raw_frame_uint8)
+                        except Exception as e:
+                            # Skip this frame if there's an error saving it
+                            continue
                         
-                        # Save as PNG
-                        frame_path = os.path.join(extracted_images_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
-                        cv2.imwrite(frame_path, frame_uint8)
+                        # Save masked frame
+                        masked_frame = pixels[frame_idx]
+                        if masked_frame.max() > 1.0:
+                            masked_frame_uint8 = np.clip(masked_frame, 0, 255).astype(np.uint8)
+                        else:
+                            masked_frame_uint8 = (masked_frame * 255).astype(np.uint8)
+                        
+                        masked_frame_path = os.path.join(masked_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                        cv2.imwrite(masked_frame_path, masked_frame_uint8)
                 
-                # Model specific preprocessing
+                # Model specific preprocessing and save scaled images
                 x = np.zeros((len(pixels), video_size, video_size, 3))
                 valid_frames = True
                 for i in range(len(x)):
@@ -435,6 +483,21 @@ class EchoQualityInference:
                         error_stats["error_files"]["scaling_error"].append(f"{dicom_path} (frame {i})")
                         valid_frames = False
                         break
+                
+                # Save scaled/cropped frames if processing was successful
+                if valid_frames and save_extracted_images and extracted_images_dir:
+                    # Save scaled frames for the same sample indices
+                    for idx_frame, frame_idx in enumerate(sample_indices):
+                        if frame_idx < len(x):
+                            scaled_frame = x[frame_idx]
+                            # Convert to uint8 for saving
+                            if scaled_frame.max() > 1.0:
+                                scaled_frame_uint8 = np.clip(scaled_frame, 0, 255).astype(np.uint8)
+                            else:
+                                scaled_frame_uint8 = (scaled_frame * 255).astype(np.uint8)
+                            
+                            scaled_frame_path = os.path.join(scaled_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                            cv2.imwrite(scaled_frame_path, scaled_frame_uint8)
                 
                 # Skip if any frame processing failed
                 if not valid_frames:
@@ -641,6 +704,19 @@ class EchoQualityInference:
                 "pass_rate": 0.0
             }
 
+def clean_output_directories():
+    """
+    Clean the data and results directories to ensure fresh output for each run.
+    """
+    directories_to_clean = ["data", "results"]
+    
+    for directory in directories_to_clean:
+        if os.path.exists(directory):
+            print(f"🧹 Cleaning {directory}/ directory...")
+            shutil.rmtree(directory)
+        os.makedirs(directory, exist_ok=True)
+        print(f"✅ Created fresh {directory}/ directory")
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Run inference with the echo quality model on device folders.")
@@ -651,6 +727,9 @@ def main():
     parser.add_argument("--gradcam", action="store_true", help="Generate GradCAM visualizations")
     parser.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "cuda"], help="Device to run inference on")
     args = parser.parse_args()
+    
+    # Clean output directories before starting
+    clean_output_directories()
     
     # Set device
     if args.device == "auto":
