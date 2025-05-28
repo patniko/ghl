@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Script for running inference with the trained echo quality model.
-This script processes each folder in the data/ directory independently and provides a summary.
+This script processes each folder in the raw_data/ directory independently and provides a summary.
 """
 
 import os
@@ -641,8 +641,8 @@ class EchoQualityInference:
                 folder_save_dir = os.path.join(save_dir, folder_name)
                 os.makedirs(folder_save_dir, exist_ok=True)
             
-            # Create data directory for extracted images
-            data_save_dir = os.path.join("data", folder_name)
+            # Create preprocessed_data directory for extracted images
+            data_save_dir = os.path.join("preprocessed_data", folder_name)
             
             # Run inference on folder
             inference_result = self.run_inference_on_folder(
@@ -708,7 +708,7 @@ def clean_output_directories():
     """
     Clean the data and results directories to ensure fresh output for each run.
     """
-    directories_to_clean = ["data", "results"]
+    directories_to_clean = ["preprocessed_data", "results"]
     
     for directory in directories_to_clean:
         if os.path.exists(directory):
@@ -720,7 +720,7 @@ def clean_output_directories():
 def main():
     """Main function."""
     parser = argparse.ArgumentParser(description="Run inference with the echo quality model on device folders.")
-    parser.add_argument("--data_dir", type=str, default="data", help="Directory containing device folders")
+    parser.add_argument("--data_dir", type=str, default="raw_data", help="Directory containing device folders")
     parser.add_argument("--model", type=str, default="weights/video_quality_model.pt", help="Path to model weights")
     parser.add_argument("--output", type=str, default="results/inference_output", help="Directory to save results")
     parser.add_argument("--threshold", type=float, default=0.3, help="Threshold for binary classification")

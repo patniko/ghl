@@ -24,8 +24,8 @@ __MACOSX/._model_data
 test_output/
 
 
-models.echoquality/raw/
-models.echoquality/data/
+models.echoquality/raw_data/
+models.echoquality/preprocessed_data/
 models.echoquality/weights/
 models.echoquality/results/fail*
 models.echoprime/weights/

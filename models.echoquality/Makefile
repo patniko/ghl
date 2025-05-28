@@ -22,7 +22,7 @@ help:
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make train              Run model training with default parameters"
-	@echo "  make inference          Run inference on all folders in raw/ directory"
+	@echo "  make inference          Run inference on all folders in raw_data/ directory"
 
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
@@ -58,8 +58,8 @@ train:
 
 .PHONY: inference
 inference:
-	@echo "${YELLOW}Running EchoQuality inference on all folders in raw/ directory...${NC}"
-	@$(POETRY) run python -m inference.inference --data_dir ./raw --output ./results/inference_output
+	@echo "${YELLOW}Running EchoQuality inference on all folders in raw_data/ directory...${NC}"
+	@$(POETRY) run python -m inference.inference --data_dir ./raw_data --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
 
 # Docker commands

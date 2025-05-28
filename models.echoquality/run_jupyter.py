@@ -28,11 +28,11 @@ def main():
         os.makedirs(mask_dir / "after", exist_ok=True)
         print(f"Created mask_images directory at {mask_dir.absolute()}")
     
-    # Ensure data directory exists
-    data_dir = Path("data")
+    # Ensure preprocessed_data directory exists
+    data_dir = Path("preprocessed_data")
     if not data_dir.exists():
         os.makedirs(data_dir / "example_study", exist_ok=True)
-        print(f"Created data directory at {data_dir.absolute()}")
+        print(f"Created preprocessed_data directory at {data_dir.absolute()}")
     
     # Build command
     cmd = [

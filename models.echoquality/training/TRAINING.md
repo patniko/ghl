@@ -66,7 +66,7 @@ python train_quality_model.py
 
 This will:
 - Load your annotations from the CSV file
-- Split the data into training, validation, and test sets
+- Split the preprocessed_data into training, validation, and test sets
 - Load the pre-trained model
 - Freeze early layers and only train the final layers
 - Train for the specified number of epochs
@@ -94,7 +94,7 @@ augmentation = EchoVideoAugmentation(
     transform_prob=0.5
 )
 
-# Apply to your dataset
+# Apply to your preprocessed_data
 train_dataset = EchoDataset(train_paths, train_labels, transform=augmentation)
 ```
 
@@ -215,7 +215,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
 
 ### 3. Focal Loss for Imbalanced Data
 
-If your dataset has imbalanced classes, you can use Focal Loss instead of BCE:
+If your preprocessed_data has imbalanced classes, you can use Focal Loss instead of BCE:
 
 ```python
 class FocalLoss(nn.Module):
@@ -273,7 +273,7 @@ If the model is not performing well:
 - Experiment with different learning rates
 - Unfreeze more layers of the model
 - Use a different loss function
-- Balance your dataset
+- Balance your preprocessed_data
 
 ## Next Steps
 

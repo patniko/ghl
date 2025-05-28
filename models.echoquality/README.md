@@ -10,7 +10,7 @@ EchoQuality uses a pre-trained R(2+1)D model to classify the quality of echocard
 
 The project is organized into the following directories:
 
-- `data/`: Contains study data organized by device type
+- `preprocessed_data/`: Contains study data organized by device type
 - `weights/`: Contains model weights, embeddings, and other model-related data
 - `inference/`: Contains code for running inference with the quality assessment model
 - `training/`: Contains code and documentation for training the model
@@ -33,13 +33,13 @@ The project is organized into the following directories:
 The easiest way to run quality assessment is using the Makefile:
 
 ```bash
-# Run inference on all DICOM files in raw/ directory
+# Run inference on all DICOM files in raw_data/ directory
 make inference
 ```
 
 This command:
-- Processes DICOM files from `raw/` directory
-- Extracts processed images to `data/` directory  
+- Processes DICOM files from `raw_data/` directory
+- Extracts processed images to `preprocessed_data/` directory  
 - Saves analysis results to `results/inference_output/`
 
 ### Directory Structure

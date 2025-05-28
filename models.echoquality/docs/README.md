@@ -7,7 +7,7 @@ Welcome to the EchoQuality documentation. This directory contains comprehensive 
 ### 📚 Main Guides
 
 - **[Inference Pipeline Guide](inference_pipeline.md)** - Complete documentation of the `make inference` command
-  - Detailed process flow from raw DICOM files to analysis results
+  - Detailed process flow from raw_data DICOM files to analysis results
   - Directory structure and data flow explanation
   - Error tracking and troubleshooting
   - Command-line options and examples
@@ -29,7 +29,7 @@ make inference
 ### 2. Directory Setup
 Ensure your directory structure follows this pattern:
 ```
-raw/                                    # Place your DICOM files here
+raw_data/                               # Place your DICOM files here
 ├── patient_001_device_A_study_001/     # One patient, one device, one study
 │   ├── view1.dcm
 │   ├── view2.dcm
@@ -45,7 +45,7 @@ raw/                                    # Place your DICOM files here
 
 ### 3. View Results
 After running inference, check:
-- `data/` - Extracted images from DICOM files
+- `preprocessed_data/` - Extracted images from DICOM files
 - `results/inference_output/` - Analysis results and reports
 
 ## Key Features

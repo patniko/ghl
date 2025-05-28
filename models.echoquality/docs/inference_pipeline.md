@@ -12,17 +12,17 @@ make inference
 
 This command executes:
 ```bash
-poetry run python -m inference.inference --data_dir ./raw --output ./results/inference_output
+poetry run python -m inference.inference --data_dir ./raw_data --output ./results/inference_output
 ```
 
 ## Directory Structure and Data Flow
 
-### Input Directory: `raw/`
+### Input Directory: `raw_data/`
 - **Purpose**: Contains raw DICOM files organized by patient/device/study folders
 - **Organization**: Each folder represents **one patient using one device in one study**
 - **Structure**: 
   ```
-  raw/
+  raw_data/
   ├── patient_001_device_A_study_20240101/
   │   ├── view1.dcm
   │   ├── view2.dcm
@@ -38,11 +38,11 @@ poetry run python -m inference.inference --data_dir ./raw --output ./results/inf
 - **File Types**: DICOM files (.dcm) containing echocardiogram video data
 - **Important**: All DICOM files within a single folder must be from the same patient, using the same device, during the same study session
 
-### Output Directory: `data/`
+### Output Directory: `preprocessed_data/`
 - **Purpose**: Stores extracted and processed images from DICOM files
 - **Structure**:
   ```
-  data/
+  preprocessed_data/
   ├── device_1/
   │   ├── study1_frame_00.png
   │   ├── study1_frame_01.png
@@ -103,7 +103,7 @@ For each DICOM file, the pipeline:
 
 #### c. **Image Extraction**
 - Extracts up to 5 sample frames per study
-- Saves frames as PNG images to `data/{device_name}/`
+- Saves frames as PNG images to `preprocessed_data/{device_name}/`
 - Converts to uint8 format for storage
 
 #### d. **Quality Assessment**
