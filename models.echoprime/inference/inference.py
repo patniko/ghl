@@ -10,6 +10,7 @@ import glob
 import json
 import pickle
 import argparse
+import shutil
 from pathlib import Path
 from tqdm import tqdm
 
@@ -125,42 +126,206 @@ class EchoPrimeInference:
         
         print("MIL weights loaded successfully!")
     
-    def process_dicoms(self, input_dir):
+    def process_dicoms(self, input_dir, save_extracted_images=False, extracted_images_dir=None):
         """
         Process DICOM files from a directory.
         
         Args:
             input_dir (str): Path to directory containing DICOM files
+            save_extracted_images (bool): Whether to save extracted images to data directory
+            extracted_images_dir (str): Directory to save extracted images
             
         Returns:
-            torch.Tensor: Processed video tensor
+            tuple: (torch.Tensor, dict) - Processed video tensor and error statistics
         """
         dicom_paths = glob.glob(f'{input_dir}/**/*', recursive=True)
         stack_of_videos = []
         
+        # Track error statistics
+        error_stats = {
+            "total_files": len(dicom_paths),
+            "processed_files": 0,
+            "successful_files": 0,
+            "error_counts": {
+                "not_dicom": 0,
+                "empty_pixel_array": 0,
+                "invalid_dimensions": 0,
+                "masking_error": 0,
+                "scaling_error": 0,
+                "other_errors": 0
+            },
+            "error_files": {
+                "not_dicom": [],
+                "empty_pixel_array": [],
+                "invalid_dimensions": [],
+                "masking_error": [],
+                "scaling_error": [],
+                "other_errors": []
+            }
+        }
+        
         print(f"Processing {len(dicom_paths)} DICOM files from {input_dir}")
         
         for dicom_path in tqdm(dicom_paths, desc="Processing DICOMs"):
+            filename = os.path.basename(dicom_path)
+            
             try:
-                # Read DICOM file
-                dcm = pydicom.dcmread(dicom_path)
-                pixels = dcm.pixel_array
+                # Try to read DICOM file
+                try:
+                    dcm = pydicom.dcmread(dicom_path)
+                    error_stats["processed_files"] += 1
+                except Exception as e:
+                    error_stats["error_counts"]["not_dicom"] += 1
+                    error_stats["error_files"]["not_dicom"].append(dicom_path)
+                    continue
                 
-                # Exclude images with invalid dimensions
-                if pixels.ndim < 3 or pixels.shape[2] == 3:
+                try:
+                    pixels = dcm.pixel_array
+                except Exception as e:
+                    error_stats["error_counts"]["empty_pixel_array"] += 1
+                    error_stats["error_files"]["empty_pixel_array"].append(dicom_path)
+                    continue
+                
+                # Check dimensions
+                if pixels.ndim < 3:
+                    error_stats["error_counts"]["invalid_dimensions"] += 1
+                    error_stats["error_files"]["invalid_dimensions"].append(dicom_path)
+                    continue
+                
+                # Exclude images with invalid dimensions (original EchoPrime logic)
+                if pixels.shape[2] == 3:
+                    error_stats["error_counts"]["invalid_dimensions"] += 1
+                    error_stats["error_files"]["invalid_dimensions"].append(dicom_path)
                     continue
                 
                 # If single channel, repeat to 3 channels
                 if pixels.ndim == 3:
                     pixels = np.repeat(pixels[..., None], 3, axis=3)
                 
-                # Mask everything outside ultrasound region
-                pixels = mask_outside_ultrasound(pixels)
+                # Check if pixel array is valid before processing
+                if pixels.size == 0 or pixels.shape[0] == 0:
+                    error_stats["error_counts"]["empty_pixel_array"] += 1
+                    error_stats["error_files"]["empty_pixel_array"].append(dicom_path)
+                    continue
                 
-                # Model specific preprocessing
+                # Mask everything outside ultrasound region
+                try:
+                    pixels = mask_outside_ultrasound(pixels)
+                    
+                    # Verify pixels are not empty after masking
+                    if pixels is None or len(pixels) == 0 or pixels.size == 0:
+                        error_stats["error_counts"]["masking_error"] += 1
+                        error_stats["error_files"]["masking_error"].append(dicom_path)
+                        continue
+                except Exception as e:
+                    error_stats["error_counts"]["masking_error"] += 1
+                    error_stats["error_files"]["masking_error"].append(dicom_path)
+                    continue
+                
+                # Save extracted images to data directory if requested
+                if save_extracted_images and extracted_images_dir:
+                    os.makedirs(extracted_images_dir, exist_ok=True)
+                    base_filename = os.path.splitext(filename)[0]
+                    
+                    # Create subdirectories for different processing stages
+                    raw_dir = os.path.join(extracted_images_dir, "1_raw_extracted")
+                    masked_dir = os.path.join(extracted_images_dir, "2_masked")
+                    scaled_dir = os.path.join(extracted_images_dir, "3_scaled_cropped")
+                    os.makedirs(raw_dir, exist_ok=True)
+                    os.makedirs(masked_dir, exist_ok=True)
+                    os.makedirs(scaled_dir, exist_ok=True)
+                    
+                    # Save a few sample frames as images
+                    sample_indices = np.linspace(0, len(pixels)-1, min(5, len(pixels)), dtype=int)
+                    for idx_frame, frame_idx in enumerate(sample_indices):
+                        try:
+                            # Save raw frame (before masking) - use the original pixel array
+                            raw_frame = dcm.pixel_array[frame_idx]
+                            
+                            # Validate frame dimensions
+                            if raw_frame.size == 0 or raw_frame.shape[0] == 0 or raw_frame.shape[1] == 0:
+                                continue
+                                
+                            # Handle different dimensions properly
+                            if raw_frame.ndim == 2:
+                                # Grayscale - convert to 3 channel
+                                raw_frame = cv2.cvtColor(raw_frame.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+                            elif raw_frame.ndim == 3 and raw_frame.shape[2] == 1:
+                                # Single channel - repeat to 3 channels
+                                raw_frame = np.repeat(raw_frame, 3, axis=2)
+                            elif raw_frame.ndim == 3 and raw_frame.shape[2] == 3:
+                                # Already 3 channels
+                                pass
+                            else:
+                                # Skip invalid dimensions
+                                continue
+                            
+                            # Ensure valid image dimensions for PNG
+                            if raw_frame.shape[0] > 65535 or raw_frame.shape[1] > 65535:
+                                continue
+                                
+                            # Convert to uint8 for saving
+                            if raw_frame.max() > 255:
+                                raw_frame_uint8 = np.clip(raw_frame, 0, 255).astype(np.uint8)
+                            elif raw_frame.max() <= 1.0:
+                                raw_frame_uint8 = (raw_frame * 255).astype(np.uint8)
+                            else:
+                                raw_frame_uint8 = raw_frame.astype(np.uint8)
+                            
+                            # Save raw extracted frame
+                            raw_frame_path = os.path.join(raw_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                            cv2.imwrite(raw_frame_path, raw_frame_uint8)
+                        except Exception as e:
+                            # Skip this frame if there's an error saving it
+                            continue
+                        
+                        # Save masked frame
+                        masked_frame = pixels[frame_idx]
+                        if masked_frame.max() > 1.0:
+                            masked_frame_uint8 = np.clip(masked_frame, 0, 255).astype(np.uint8)
+                        else:
+                            masked_frame_uint8 = (masked_frame * 255).astype(np.uint8)
+                        
+                        masked_frame_path = os.path.join(masked_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                        cv2.imwrite(masked_frame_path, masked_frame_uint8)
+                
+                # Model specific preprocessing and save scaled images
                 x = np.zeros((len(pixels), VIDEO_SIZE, VIDEO_SIZE, 3))
+                valid_frames = True
                 for i in range(len(x)):
-                    x[i] = crop_and_scale(pixels[i], res=(VIDEO_SIZE, VIDEO_SIZE))
+                    # Check if the frame is valid before scaling
+                    if pixels[i].size == 0 or pixels[i].shape[0] == 0 or pixels[i].shape[1] == 0:
+                        error_stats["error_counts"]["invalid_dimensions"] += 1
+                        error_stats["error_files"]["invalid_dimensions"].append(f"{dicom_path} (frame {i})")
+                        valid_frames = False
+                        break
+                    try:
+                        x[i] = crop_and_scale(pixels[i], res=(VIDEO_SIZE, VIDEO_SIZE))
+                    except Exception as e:
+                        error_stats["error_counts"]["scaling_error"] += 1
+                        error_stats["error_files"]["scaling_error"].append(f"{dicom_path} (frame {i})")
+                        valid_frames = False
+                        break
+                
+                # Save scaled/cropped frames if processing was successful
+                if valid_frames and save_extracted_images and extracted_images_dir:
+                    # Save scaled frames for the same sample indices
+                    sample_indices = np.linspace(0, len(pixels)-1, min(5, len(pixels)), dtype=int)
+                    for idx_frame, frame_idx in enumerate(sample_indices):
+                        if frame_idx < len(x):
+                            scaled_frame = x[frame_idx]
+                            # Convert to uint8 for saving
+                            if scaled_frame.max() > 1.0:
+                                scaled_frame_uint8 = np.clip(scaled_frame, 0, 255).astype(np.uint8)
+                            else:
+                                scaled_frame_uint8 = (scaled_frame * 255).astype(np.uint8)
+                            
+                            scaled_frame_path = os.path.join(scaled_dir, f"{base_filename}_frame_{idx_frame:02d}.png")
+                            cv2.imwrite(scaled_frame_path, scaled_frame_uint8)
+                
+                # Skip if any frame processing failed
+                if not valid_frames:
+                    continue
                 
                 x = torch.as_tensor(x, dtype=torch.float).permute([3, 0, 1, 2])
                 
@@ -177,15 +342,18 @@ class EchoPrimeInference:
                 
                 start = 0
                 stack_of_videos.append(x[:, start:(start + FRAMES_TO_TAKE):FRAME_STRIDE, :, :])
+                error_stats["successful_files"] += 1
                 
             except Exception as e:
-                print(f"Error processing {dicom_path}: {str(e)}")
-                continue
+                error_stats["error_counts"]["other_errors"] += 1
+                error_stats["error_files"]["other_errors"].append(dicom_path)
+                print(f"Corrupt file or unexpected error: {dicom_path}")
+                print(str(e))
         
         if not stack_of_videos:
-            return None
+            return None, error_stats
             
-        return torch.stack(stack_of_videos)
+        return torch.stack(stack_of_videos), error_stats
     
     def embed_videos(self, stack_of_videos):
         """
@@ -233,26 +401,32 @@ class EchoPrimeInference:
         
         return stack_of_view_encodings
     
-    def encode_study(self, input_dir):
+    def encode_study(self, input_dir, save_extracted_images=False, extracted_images_dir=None):
         """
         Encode an entire study.
         
         Args:
             input_dir (str): Path to study directory
+            save_extracted_images (bool): Whether to save extracted images to data directory
+            extracted_images_dir (str): Directory to save extracted images
             
         Returns:
-            torch.Tensor: Study encoding
+            tuple: (torch.Tensor, dict) - Study encoding and error statistics
         """
-        stack_of_videos = self.process_dicoms(input_dir)
+        stack_of_videos, error_stats = self.process_dicoms(
+            input_dir, 
+            save_extracted_images=save_extracted_images, 
+            extracted_images_dir=extracted_images_dir
+        )
         
         if stack_of_videos is None:
-            return None
+            return None, error_stats
         
         stack_of_features = self.embed_videos(stack_of_videos)
         stack_of_view_encodings = self.get_views(stack_of_videos)
         encoded_study = torch.cat((stack_of_features, stack_of_view_encodings), dim=1)
         
-        return encoded_study
+        return encoded_study, error_stats
     
     def generate_report(self, study_embedding):
         """
@@ -321,12 +495,110 @@ class EchoPrimeInference:
         
         return preds
     
-    def process_folder(self, folder_path):
+    def save_failed_files_to_json(self, folder_name, error_stats, save_dir):
+        """
+        Save failed files information to a JSON file.
+        
+        Args:
+            folder_name (str): Name of the folder being processed
+            error_stats (dict): Error statistics dictionary
+            save_dir (str): Directory to save the failed files JSON
+        """
+        if not save_dir:
+            return
+            
+        # Create directory for failed files if it doesn't exist
+        failed_files_dir = save_dir
+        os.makedirs(failed_files_dir, exist_ok=True)
+        
+        # Create a structured dictionary of failed files with reasons
+        failed_files = {}
+        for error_type, file_list in error_stats["error_files"].items():
+            for file_path in file_list:
+                # Use the filename as the key
+                filename = os.path.basename(file_path)
+                # If the file path contains a frame index (for frame-specific errors)
+                if " (frame " in file_path:
+                    base_path, frame_info = file_path.split(" (frame ", 1)
+                    filename = os.path.basename(base_path)
+                    frame_num = frame_info.rstrip(")")
+                    error_reason = f"{error_type} in frame {frame_num}"
+                else:
+                    error_reason = error_type
+                
+                # Add to the failed files dictionary
+                if filename not in failed_files:
+                    failed_files[filename] = {
+                        "path": file_path.split(" (frame ")[0] if " (frame " in file_path else file_path,
+                        "reasons": [error_reason]
+                    }
+                else:
+                    # If this file already has other errors, add this reason
+                    if error_reason not in failed_files[filename]["reasons"]:
+                        failed_files[filename]["reasons"].append(error_reason)
+        
+        # Convert to a list format for easier processing
+        failed_files_list = [
+            {
+                "filename": filename,
+                "path": info["path"],
+                "reasons": info["reasons"]
+            }
+            for filename, info in failed_files.items()
+        ]
+        
+        # Save to a JSON file named after the folder
+        output_file = os.path.join(failed_files_dir, f"{folder_name}_failed_files.json")
+        with open(output_file, "w") as f:
+            json.dump({
+                "folder": folder_name,
+                "total_failed_files": len(failed_files_list),
+                "failed_files": failed_files_list
+            }, f, indent=2)
+        
+        print(f"Failed files for {folder_name} saved to {output_file}")
+
+    def print_error_summary(self, folder_name, error_stats):
+        """
+        Print a clean summary of errors for a folder.
+        
+        Args:
+            folder_name (str): Name of the folder
+            error_stats (dict): Error statistics dictionary
+        """
+        if not error_stats or not error_stats.get("error_counts"):
+            return
+            
+        total_errors = sum(error_stats["error_counts"].values())
+        if total_errors == 0:
+            return
+            
+        print(f"\n📊 Error Summary for {folder_name}:")
+        print(f"   Total files: {error_stats['total_files']}")
+        print(f"   Successful: {error_stats['successful_files']}")
+        print(f"   Failed: {total_errors}")
+        print("   Error breakdown:")
+        
+        for error_type, count in error_stats["error_counts"].items():
+            if count > 0:
+                error_descriptions = {
+                    "not_dicom": "Not valid DICOM files",
+                    "empty_pixel_array": "Empty or missing pixel data",
+                    "invalid_dimensions": "Invalid image dimensions",
+                    "masking_error": "Ultrasound masking failed",
+                    "scaling_error": "Frame scaling/cropping failed",
+                    "other_errors": "Other processing errors"
+                }
+                description = error_descriptions.get(error_type, error_type)
+                print(f"     • {description}: {count}")
+    
+    def process_folder(self, folder_path, save_dir=None):
         """
         Process a single folder and return results.
         
         Args:
             folder_path (str): Path to folder containing DICOM files
+            save_dir (str, optional): Directory to save results
             
         Returns:
             dict: Processing results
@@ -335,36 +607,94 @@ class EchoPrimeInference:
         print(f"\nProcessing folder: {folder_name}")
         
         try:
-            # Encode the study
-            encoded_study = self.encode_study(folder_path)
+            # Create folder-specific save directory
+            folder_save_dir = None
+            if save_dir:
+                folder_save_dir = os.path.join(save_dir, folder_name)
+                os.makedirs(folder_save_dir, exist_ok=True)
+            
+            # Create preprocessed_data directory for extracted images
+            data_save_dir = os.path.join("preprocessed_data", folder_name)
+            
+            # Encode the study with real-time image saving
+            encoded_study, error_stats = self.encode_study(
+                folder_path,
+                save_extracted_images=True,
+                extracted_images_dir=data_save_dir
+            )
+            
+            # Save failed files to JSON if there are any errors
+            if folder_save_dir and error_stats:
+                self.save_failed_files_to_json(folder_name, error_stats, folder_save_dir)
+            
+            # Print error summary for this folder
+            self.print_error_summary(folder_name, error_stats)
             
             if encoded_study is None:
                 return {
                     "folder": folder_name,
                     "status": "failed",
                     "error": "No valid DICOM files found",
-                    "num_videos": 0
+                    "num_files": error_stats.get("total_files", 0),
+                    "num_processed": error_stats.get("successful_files", 0),
+                    "num_videos": 0,
+                    "error_stats": error_stats
                 }
             
             # Generate report and metrics
             report = self.generate_report(encoded_study)
             metrics = self.predict_metrics(encoded_study)
             
-            return {
+            # Save results to JSON if save_dir is provided
+            result = {
                 "folder": folder_name,
                 "status": "success",
+                "num_files": error_stats.get("total_files", 0),
+                "num_processed": error_stats.get("successful_files", 0),
                 "num_videos": encoded_study.shape[0],
                 "report": report,
-                "metrics": metrics
+                "metrics": metrics,
+                "error_stats": error_stats
             }
             
+            if folder_save_dir:
+                with open(os.path.join(folder_save_dir, "results.json"), "w") as f:
+                    json.dump(result, f, indent=2, default=str)
+                print(f"Results for {folder_name} saved to {folder_save_dir}")
+            
+            return result
+            
         except Exception as e:
-            return {
+            error_result = {
                 "folder": folder_name,
                 "status": "failed",
                 "error": str(e),
+                "num_files": 0,
+                "num_processed": 0,
                 "num_videos": 0
             }
+            
+            # Save error result if save_dir is provided
+            if save_dir:
+                folder_save_dir = os.path.join(save_dir, folder_name)
+                os.makedirs(folder_save_dir, exist_ok=True)
+                with open(os.path.join(folder_save_dir, "results.json"), "w") as f:
+                    json.dump(error_result, f, indent=2, default=str)
+            
+            return error_result
+
+def clean_output_directories():
+    """
+    Clean the data and results directories to ensure fresh output for each run.
+    """
+    directories_to_clean = ["preprocessed_data", "results"]
+    
+    for directory in directories_to_clean:
+        if os.path.exists(directory):
+            print(f"🧹 Cleaning {directory}/ directory...")
+            shutil.rmtree(directory)
+        os.makedirs(directory, exist_ok=True)
+        print(f"✅ Created fresh {directory}/ directory")
 
 def main():
     """Main function."""
@@ -374,6 +704,9 @@ def main():
     parser.add_argument("--output", type=str, default="results/inference_output", help="Directory to save results")
     parser.add_argument("--device", type=str, default="auto", choices=["auto", "cpu", "cuda"], help="Device to run inference on")
     args = parser.parse_args()
+    
+    # Clean output directories before starting
+    clean_output_directories()
     
     # Set device
     if args.device == "auto":
@@ -399,10 +732,10 @@ def main():
     
     print(f"Found {len(folders)} folders to process: {[f.name for f in folders]}")
     
-    # Process each folder
+    # Process each folder with real-time saving
     all_results = []
     for folder in folders:
-        result = inference.process_folder(str(folder))
+        result = inference.process_folder(str(folder), save_dir=args.output)
         all_results.append(result)
     
     # Save individual results
