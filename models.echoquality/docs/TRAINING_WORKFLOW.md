@@ -111,14 +111,14 @@ Based on your inference results, you can expect:
 
 ### Sample Limits
 ```bash
-poetry run python prepare_training_data.py \
+poetry run python scripts/prepare_training_data.py \
     --max-high-quality 800 \
     --max-low-quality 300
 ```
 
 ### Quality Thresholds
 ```bash
-poetry run python prepare_training_data.py \
+poetry run python scripts/prepare_training_data.py \
     --high-quality-threshold 0.90 \
     --low-quality-threshold 0.15
 ```

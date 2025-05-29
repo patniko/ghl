@@ -113,7 +113,7 @@ jupyter:
 .PHONY: prepare-data
 prepare-data:
 	@echo "${YELLOW}Preparing training data from inference results...${NC}"
-	@$(POETRY) run python prepare_training_data.py
+	@$(POETRY) run python scripts/prepare_training_data.py
 	@echo "${GREEN}Training data preparation complete!${NC}"
 
 .PHONY: train
