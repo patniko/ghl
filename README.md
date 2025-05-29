@@ -57,68 +57,9 @@ docker --version
 docker-compose --version
 ```
 
-**Installation:**
-- **Ubuntu/Debian:**
-  ```bash
-  sudo apt update
-  sudo apt install docker.io docker-compose
-  sudo usermod -aG docker $USER
-  # Log out and back in for group changes to take effect
-  ```
-- **macOS:** Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- **Windows:** Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
-
 ### Optional Dependencies
 
 - **CUDA Toolkit** (for GPU acceleration): CUDA 11.8+ recommended
-- **Git LFS** (for large model files): `git lfs install`
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd ghl
-```
-
-### 2. Set Up Individual Components
-
-Each component has its own setup process. Navigate to the specific directory and run:
-
-```bash
-# For models
-cd models.hubertecg  # or any other model directory
-make setup
-```
-
-## 📋 Component-Specific Setup
-
-### Models
-Each model directory contains its own `Makefile` with standardized commands:
-- `make setup` - Install dependencies and set up environment
-- `make train` - Train the model (where applicable)
-- `make test` - Run tests
-- `make clean` - Clean up generated files
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Poetry Configuration Error**
-   - Ensure you're using Poetry 2.1+
-   - Older versions don't support `package-mode` and dependency groups
-
-2. **Docker Permission Denied**
-   - Add your user to the docker group: `sudo usermod -aG docker $USER`
-   - Log out and back in
-
-3. **Python Version Conflicts**
-   - Use `pyenv` to manage multiple Python versions
-   - Ensure Poetry is using the correct Python version
-
-4. **CUDA/GPU Issues**
-   - Install appropriate CUDA toolkit for your GPU
-   - Verify with `nvidia-smi`
 
 ## 📚 Documentation
 
