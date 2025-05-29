@@ -25,14 +25,15 @@ help:
 	@echo "  make setup-all          Setup environment and download weights"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
-	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make inference          Run inference on all folders in raw_data/ directory"
+	@echo "  make train              Run model training"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
 	@echo "  make run-docker         Run Docker container"
 	@echo ""
 	@echo "${GREEN}Utility Commands:${NC}"
+	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make clean              Clean up temporary files"
 	@echo ""
 	@echo "Example usage:"
@@ -97,6 +98,12 @@ inference:
 	@echo "${YELLOW}Running EchoPrime inference on all folders in raw_data/ directory...${NC}"
 	@$(POETRY) run python -m inference.inference --data_dir ./raw_data --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
+
+.PHONY: train
+train:
+	@echo "${YELLOW}Running EchoPrime model training...${NC}"
+	@$(POETRY) run python -m training.echoprime_finetune train
+	@echo "${GREEN}Training complete!${NC}"
 
 # Docker commands
 .PHONY: build-docker

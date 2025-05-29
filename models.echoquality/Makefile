@@ -17,7 +17,7 @@ help:
 	@echo "${YELLOW}EchoQuality Makefile Commands:${NC}"
 	@echo ""
 	@echo "${GREEN}Setup Commands:${NC}"
-	@echo "  make setup              Setup Poetry environment"
+	@echo "  make init               Setup Poetry environment"
 	@echo "  make prepare-data       Prepare training data from inference results"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
@@ -36,7 +36,7 @@ help:
 	@echo ""
 
 # Setup commands
-.PHONY: setup
+.PHONY: init
 setup:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install

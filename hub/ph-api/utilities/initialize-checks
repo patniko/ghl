@@ -1,3 +1,0 @@
-#!/bin/bash
-# Execute the initialize_checks.py script with the provided arguments
-python3 "$(dirname "$0")/initialize_checks.py" "$@"
