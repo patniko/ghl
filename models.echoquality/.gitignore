@@ -61,3 +61,4 @@ ehthumbs.db
 Thumbs.db
 
 data/*.dcm
+trained_models/

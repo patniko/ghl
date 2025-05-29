@@ -15,8 +15,12 @@ import random
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 
-# Import functions from EchoPrime_qc.py
-from EchoPrime_qc import mask_outside_ultrasound, crop_and_scale
+# Import functions from EchoPrime preprocessors
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '../../models.echoprime/preprocessors'))
+from ultrasound_masking import mask_outside_ultrasound
+from image_scaling import crop_and_scale
 
 # Configuration
 BATCH_SIZE = 8
@@ -24,9 +28,9 @@ EPOCHS = 20
 LEARNING_RATE = 1e-4
 WEIGHT_DECAY = 1e-5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-ANNOTATIONS_CSV = "echo_annotations.csv"  # Path to your CSV annotations
+ANNOTATIONS_CSV = "training_data/echo_annotations.csv"  # Path to your CSV annotations
 VIDEOS_DIR = "echo_videos"  # Directory containing your 100 echo videos
-MODEL_WEIGHTS = "video_quality_model.pt"  # Path to your current model weights
+MODEL_WEIGHTS = "../models.echoprime/weights/video_quality_model.pt"  # Path to your current model weights
 SAVE_DIR = "trained_models"  # Directory to save trained models
 NUM_UNFROZEN_LAYERS = 2  # Number of layers to unfreeze for fine-tuning
 
@@ -73,20 +77,19 @@ class EchoDataset(Dataset):
                 # Skip this file or handle differently
                 # For now, we'll create a dummy tensor
                 dummy_tensor = torch.zeros((3, frames_to_take, video_size, video_size))
-                return dummy_tensor, label
+                return dummy_tensor, torch.tensor(label, dtype=torch.float)
             
             # If single channel, repeat to 3 channels
             if pixels.ndim == 3:
                 pixels = np.repeat(pixels[..., None], 3, axis=3)
             
             # Mask everything outside ultrasound region
-            filename = os.path.basename(video_path)
-            pixels = mask_outside_ultrasound(pixels, filename)
+            pixels = mask_outside_ultrasound(pixels)
             
             # Model specific preprocessing
             x = np.zeros((len(pixels), video_size, video_size, 3))
             for i in range(len(x)):
-                x[i] = crop_and_scale(pixels[i])
+                x[i] = crop_and_scale(pixels[i], res=(video_size, video_size))
             
             # Convert to tensor and permute dimensions
             x = torch.as_tensor(x, dtype=torch.float).permute([3, 0, 1, 2])
@@ -109,19 +112,33 @@ class EchoDataset(Dataset):
             
             # Apply stride and take required frames
             start = 0
-            x = x[:, start: (start + frames_to_take): frame_stride, :, :]
+            if x.shape[1] >= frames_to_take:
+                x = x[:, start: (start + frames_to_take): frame_stride, :, :]
+            else:
+                # If not enough frames, just take what we have
+                x = x[:, start::frame_stride, :, :]
+            
+            # Ensure we have exactly frames_to_take frames
+            if x.shape[1] < frames_to_take:
+                padding = torch.zeros(
+                    (3, frames_to_take - x.shape[1], video_size, video_size),
+                    dtype=torch.float,
+                )
+                x = torch.cat((x, padding), dim=1)
+            elif x.shape[1] > frames_to_take:
+                x = x[:, :frames_to_take, :, :]
             
             # Apply any additional transforms
             if self.transform:
                 x = self.transform(x)
             
-            return x, torch.tensor([label], dtype=torch.float)
+            return x, torch.tensor(label, dtype=torch.float)
         
         except Exception as e:
             print(f"Error processing {video_path}: {str(e)}")
             # Return a dummy tensor in case of error
             dummy_tensor = torch.zeros((3, frames_to_take, video_size, video_size))
-            return dummy_tensor, torch.tensor([label], dtype=torch.float)
+            return dummy_tensor, torch.tensor(label, dtype=torch.float)
 
 def load_annotations(csv_path):
     """
@@ -138,11 +155,11 @@ def load_annotations(csv_path):
     
     # Assuming CSV has columns 'video_path' and 'quality_score'
     # Adjust column names and processing based on your actual CSV format
-    video_paths = df['video_path'].tolist()
+    # Prepend 'training_data/' to the paths since videos are in training_data/echo_videos/
+    video_paths = ['training_data/' + path for path in df['video_path'].tolist()]
     
-    # Convert quality scores to binary labels (1 for good quality, 0 for poor quality)
-    # Adjust threshold based on your annotation scheme
-    labels = (df['quality_score'] >= 0.5).astype(int).tolist()
+    # Quality scores are already binary (1 for good quality, 0 for poor quality)
+    labels = df['quality_score'].astype(int).tolist()
     
     return video_paths, labels
 
@@ -200,6 +217,7 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
         
         # Forward pass
         outputs = model(videos)
+        outputs = outputs.squeeze()  # Remove extra dimension
         loss = criterion(outputs, labels)
         
         # Backward pass and optimize
@@ -243,6 +261,7 @@ def validate(model, dataloader, criterion, device):
             
             # Forward pass
             outputs = model(videos)
+            outputs = outputs.squeeze()  # Remove extra dimension
             loss = criterion(outputs, labels)
             
             # Statistics
@@ -297,9 +316,9 @@ def main():
     test_dataset = EchoDataset(test_paths, test_labels)
     
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     
     # Load model
     print("Loading model...")
@@ -324,7 +343,7 @@ def main():
     
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='min', factor=0.1, patience=3, verbose=True
+        optimizer, mode='min', factor=0.1, patience=3
     )
     
     # Create a directory to save training metrics

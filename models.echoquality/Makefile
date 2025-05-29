@@ -18,12 +18,11 @@ help:
 	@echo ""
 	@echo "${GREEN}Setup Commands:${NC}"
 	@echo "  make setup              Setup Poetry environment"
+	@echo "  make prepare-data       Prepare training data from inference results"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
-	@echo "  make jupyter            Run Jupyter notebook"
-	@echo "  make train              Run model training with default parameters"
 	@echo "  make inference          Run inference on all folders in raw_data/ directory"
-
+	@echo "  make train              Run model training on training_data/ directory"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -32,10 +31,9 @@ help:
 	@echo "  make run-jupyter        Run Jupyter Docker container"
 	@echo ""
 	@echo "${GREEN}Utility Commands:${NC}"
+	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make clean              Clean up temporary files"
 	@echo ""
-	@echo "Example usage:"
-	@echo "  make jupyter JUPYTER_PORT=8889"
 
 # Setup commands
 .PHONY: setup
@@ -49,6 +47,12 @@ setup:
 jupyter:
 	@echo "${YELLOW}Starting Jupyter notebook on port $(JUPYTER_PORT)${NC}"
 	@$(POETRY) run python run_jupyter.py --port $(JUPYTER_PORT)
+
+.PHONY: prepare-data
+prepare-data:
+	@echo "${YELLOW}Preparing training data from inference results...${NC}"
+	@$(POETRY) run python prepare_training_data.py
+	@echo "${GREEN}Training data preparation complete!${NC}"
 
 .PHONY: train
 train:

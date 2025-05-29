@@ -27,6 +27,7 @@ test_output/
 models.echoquality/raw_data/
 models.echoquality/preprocessed_data/
 models.echoquality/weights/
+models.echoquality/training_data/
 models.echoquality/results/fail*
 models.echoprime/weights/
 models.echoprime/raw_data/

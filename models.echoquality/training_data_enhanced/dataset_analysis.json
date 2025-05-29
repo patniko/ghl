@@ -1,0 +1,16 @@
+{
+  "total_samples": 150,
+  "high_quality_count": 100,
+  "low_quality_count": 50,
+  "machine_type_distribution": {
+    "vivide95": 43,
+    "epiq7": 43,
+    "vivids70": 24,
+    "affiniti70g": 20,
+    "vivids60": 13,
+    "affiniti50g": 7
+  },
+  "high_quality_threshold": 0.95,
+  "low_quality_threshold": 0.1,
+  "missing_files": 0
+}
