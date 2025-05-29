@@ -164,6 +164,8 @@ clean:
 	@find . -type d -name ".coverage" -exec rm -rf {} +
 	@find . -type d -name "htmlcov" -exec rm -rf {} +
 	@find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+	@rm -rf ./results/*
+	@rm -rf ./preprocessed_data/*
 	@echo "${GREEN}Cleanup complete!${NC}"
 
 # Default target

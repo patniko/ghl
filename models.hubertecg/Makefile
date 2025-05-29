@@ -161,6 +161,8 @@ clean:
 	@rm -rf build/
 	@rm -rf dist/
 	@rm -rf .coverage
+	@rm -rf ./results/*
+	@rm -rf ./preprocessed_data/*
 	@echo "${GREEN}Cleanup complete!${NC}"
 
 .PHONY: test
