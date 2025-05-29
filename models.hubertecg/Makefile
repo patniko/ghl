@@ -19,21 +19,20 @@ help:
 	@echo "${GREEN}Setup Commands:${NC}"
 	@echo "  make init              Setup Poetry environment"
 	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
-	@echo "  make dicom-prep         Convert DICOM ECG files to NPY format"
-	@echo "  make alivecor-prep      Convert AliveCor JSON ECG files to NPY format"
 	@echo "  make dicom-inference    Run HuBERT-ECG inference on converted DICOM files"
 	@echo "  make dicom-metadata     Extract comprehensive metadata from DICOM files"
 	@echo "  make dicom-visualize    Create ECG signal visualizations"
+	@echo ""
+	@echo "${GREEN}Inference Commands:${NC}"
+	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
+	@echo "  make dicom-prep         Convert DICOM ECG files to NPY format"
+	@echo "  make alivecor-prep      Convert AliveCor JSON ECG files to NPY format"
 	@echo "  make visualize          Create comprehensive result visualizations"
 	@echo ""
 	@echo "${GREEN}Training Commands:${NC}"
 	@echo "  make prepare-data       Prepare ECG files for training (drop files in training_data/raw/)"
 	@echo "  make train              Train HuBERT-ECG model with prepared data"
 	@echo "  make train-from-scratch Train with random initialization (no pretrained weights)"
-	@echo ""
-	@echo "${GREEN}Run Commands:${NC}"
-	@echo "  make jupyter            Run Jupyter notebook"
-	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -42,6 +41,7 @@ help:
 	@echo "  make run-jupyter        Run Jupyter in a Docker container"
 	@echo ""
 	@echo "${GREEN}Utility Commands:${NC}"
+	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make clean              Clean up temporary files"
 	@echo "  make test               Run tests"
 	@echo ""
@@ -64,7 +64,7 @@ ptbxl-setup:
 .PHONY: dicom-prep
 dicom-prep:
 	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
-	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@$(POETRY) run python preprocessors/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${GREEN}DICOM conversion complete!${NC}"
 
 .PHONY: alivecor-prep
@@ -85,7 +85,7 @@ inference:
 	@rm -rf ./results/*
 	@rm -rf ./preprocessed_data/*
 	@echo "${YELLOW}Converting DICOM files to NPY format...${NC}"
-	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@$(POETRY) run python preprocessors/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${YELLOW}Converting AliveCor JSON files to NPY format...${NC}"
 	@$(POETRY) run python preprocessors/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
