@@ -25,12 +25,14 @@ help:
 	@echo "${GREEN}Setup Commands:${NC}"
 	@echo "  make init               Setup Poetry environment"
 	@echo "  make download-weights   Download model weights"
-	@echo "  make prepare-data       Prepare training data from inference results"
 	@echo ""
-	@echo "${GREEN}Run Commands:${NC}"
+	@echo "${GREEN}Inference Commands:${NC}"
 	@echo "  make inference          Run inference on all folders in raw_data/ directory"
-	@echo "  make train              Run model training on training_data/ directory"
 	@echo "  make visualize          Create comprehensive result visualizations"
+	@echo ""
+	@echo "${GREEN}Training Commands:${NC}"
+	@echo "  make prepare-data       Prepare training sets using inference results"
+	@echo "  make train              Run model training on training_data/ directory"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -48,6 +50,7 @@ help:
 init:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
+	@mkdir -p raw_data preprocessed_data results weights training_data
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
 
 .PHONY: download-weights
@@ -174,6 +177,8 @@ clean:
 	@find . -type d -name "htmlcov" -exec rm -rf {} +
 	@find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
 	@rm -rf quality_results.json
+	@rm -rf ./results/*
+	@rm -rf ./preprocessed_data/*
 	@echo "${GREEN}Cleanup complete!${NC}"
 
 # Default target

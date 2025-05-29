@@ -48,6 +48,7 @@ help:
 init:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
+	@mkdir -p raw_data preprocessed_data results weights training_data
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
 
 .PHONY: download-weights

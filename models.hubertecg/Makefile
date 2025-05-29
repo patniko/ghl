@@ -17,8 +17,7 @@ help:
 	@echo "${YELLOW}HuBERT-ECG Makefile Commands:${NC}"
 	@echo ""
 	@echo "${GREEN}Setup Commands:${NC}"
-	@echo "  make setup              Setup Poetry environment"
-	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
+	@echo "  make init              Setup Poetry environment"
 	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
 	@echo "  make dicom-prep         Convert DICOM ECG files to NPY format"
 	@echo "  make alivecor-prep      Convert AliveCor JSON ECG files to NPY format"
@@ -50,15 +49,11 @@ help:
 	@echo "  make jupyter JUPYTER_PORT=8889"
 
 # Setup commands
-.PHONY: setup
-setup:
+.PHONY: init
+init:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
+	@mkdir -p raw_data preprocessed_data results weights training_data
 	@$(POETRY) install
-
-.PHONY: setup-dev
-setup-dev:
-	@echo "${YELLOW}Setting up Poetry environment with dev dependencies...${NC}"
-	@$(POETRY) install --with dev
 
 .PHONY: ptbxl-setup
 ptbxl-setup:

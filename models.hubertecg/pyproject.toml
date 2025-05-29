@@ -54,8 +54,6 @@ resampy = ">=0.4.0"
 audioread = ">=3.0.0"
 pooch = ">=1.6.0"
 torcheval = "^0.0.7"
-
-[tool.poetry.group.dev.dependencies]
 jupyter = "*"
 ipykernel = "*"
 ipywidgets = "*"
