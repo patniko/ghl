@@ -1,90 +1,175 @@
-# Project Structure
+# 📁 EchoPrime Project Structure
+
+This document explains the organization of the EchoPrime project and the purpose of each directory and file.
+
+## 🏗️ Directory Overview
 
 ```
 models.echoprime/
-├── Project files (Dockerfile, README.md, pyproject.toml, etc.)
-├── data/                        # Sample data organized
-│   ├── __init__.py
-│   └── example_study/           # Moved from model_data/
-├── inference/                   # Inference scripts and demos
-│   ├── __init__.py
-│   ├── EchoPrimeDemo.ipynb     # Moved from root
-│   └── ViewClassificationDemo.ipynb # Moved from root
-├── preprocessors/               # NEW: Extracted from video_utils.py
-│   ├── __init__.py
-│   ├── image_scaling.py         # crop_and_scale, apply_zoom functions
-│   └── ultrasound_masking.py    # mask_outside_ultrasound, downsample_and_crop
-├── results/                     # NEW: For outputs and debug results
-│   └── __init__.py
-├── tools/                       # Utility scripts
-│   ├── __init__.py
-│   ├── report_processing.py     # Renamed from utils.py
-│   └── video_io.py             # Video I/O functions from video_utils.py
-├── training/                    # NEW: For training-related files
-│   └── __init__.py
-└── weights/                     # Model weights and candidate data
-    ├── __init__.py
-    ├── echo_prime_encoder.pt    # Moved from model_data/weights/
-    ├── view_classifier.ckpt     # Moved from model_data/weights/
-    └── candidates_data/         # Moved from model_data/
+├── 📄 Project Configuration
+│   ├── Dockerfile              # Docker container configuration
+│   ├── Dockerfile.jupyter      # Jupyter-specific Docker setup
+│   ├── Makefile               # Build and run commands
+│   ├── pyproject.toml         # Poetry dependencies and project config
+│   ├── requirements.txt       # Legacy pip requirements
+│   └── README.md              # Main project documentation
+│
+├── 📊 Data Directories
+│   ├── raw_data/              # Input DICOM files (user-provided)
+│   ├── preprocessed_data/     # Processed video frames
+│   ├── results/               # Analysis outputs and reports
+│   └── training_data/         # Training datasets
+│
+├── 🧠 Core Modules
+│   ├── inference/             # Main inference pipeline
+│   │   ├── __init__.py
+│   │   ├── inference.py       # Primary inference script
+│   │   └── inference_per_patient.py  # Patient-specific processing
+│   │
+│   ├── preprocessors/         # Video preprocessing utilities
+│   │   ├── __init__.py
+│   │   ├── image_scaling.py   # Frame scaling and cropping
+│   │   └── ultrasound_masking.py  # Ultrasound region masking
+│   │
+│   ├── tools/                 # Utility functions
+│   │   ├── __init__.py
+│   │   ├── dicom_analyzer.py  # DICOM file analysis
+│   │   ├── dicom_organizer.py # DICOM file organization
+│   │   ├── report_processing.py  # Report generation utilities
+│   │   └── video_io.py        # Video I/O operations
+│   │
+│   └── training/              # Model training components
+│       ├── __init__.py
+│       ├── data_preparation.py    # Training data preparation
+│       ├── echoprime_finetune.py  # Fine-tuning scripts
+│       └── training_utils.py      # Training utilities
+│
+├── 🎯 Model Assets
+│   └── weights/               # Pre-trained model weights
+│       ├── echo_prime_encoder.pt     # Main video encoder (~138MB)
+│       ├── view_classifier.ckpt      # View classification model (~350MB)
+│       └── candidates_data/          # Knowledge base for RAG (~500MB)
+│           ├── candidate_embeddings_p1.pt
+│           ├── candidate_embeddings_p2.pt
+│           ├── candidate_reports.pkl
+│           └── candidate_labels.pkl
+│
+├── 📓 Interactive Notebooks
+│   └── notebooks/
+│       ├── EchoPrime-Demo.ipynb          # Main demonstration notebook
+│       └── View-Classification-Demo.ipynb # View classification examples
+│
+├── 🛠️ Scripts
+│   └── scripts/
+│       ├── unpack_dicom_files.py         # DICOM extraction utilities
+│       ├── unpack_echoprime_dicom.py     # EchoPrime-specific DICOM processing
+│       └── visualize_results.py          # Result visualization
+│
+└── 📚 Documentation
+    └── docs/
+        ├── README.md                      # Documentation overview
+        ├── GETTING_STARTED.md             # Setup and first run guide
+        ├── ARCHITECTURE.md                # Technical system overview
+        ├── COMMAND_REFERENCE.md           # Complete command reference
+        ├── TRAINING.md                    # Model training guide
+        ├── TROUBLESHOOTING.md             # Problem resolution guide
+        ├── MODEL_WEIGHTS_EXPLAINED.md     # Model components explanation
+        └── README_DICOM_UNPACKER.md       # DICOM processing guide
 ```
 
-## Preprocessors and Tools
-- `crop_and_scale()` → `preprocessors/image_scaling.py`
-- `apply_zoom()` → `preprocessors/image_scaling.py`
-- `mask_outside_ultrasound()` → `preprocessors/ultrasound_masking.py`
-- `downsample_and_crop()` → `preprocessors/ultrasound_masking.py`
-- `read_video()` → `tools/video_io.py`
-- `write_video()` → `tools/video_io.py`
-- `write_to_avi()` → `tools/video_io.py`
-- `write_image()` → `tools/video_io.py`
-- Color conversion functions → `tools/video_io.py`
+## 🔧 Key Components
 
-## Utilities
-- All report processing functions → `tools/report_processing.py`
+### Preprocessing Pipeline
+- **Image Scaling**: `preprocessors/image_scaling.py`
+  - `crop_and_scale()` - Frame cropping and scaling
+  - `apply_zoom()` - Zoom transformations
+- **Ultrasound Masking**: `preprocessors/ultrasound_masking.py`
+  - `mask_outside_ultrasound()` - Remove non-ultrasound regions
+  - `downsample_and_crop()` - Efficient frame processing
 
-This restructuring creates a clean, maintainable codebase that follows the same organizational principles as the successful echoquality project.
+### Video I/O Operations
+- **Video Processing**: `tools/video_io.py`
+  - `read_video()` - DICOM video reading
+  - `write_video()` - Video output
+  - `write_to_avi()` - AVI format conversion
+  - `write_image()` - Image extraction
+  - Color space conversion utilities
 
-## Inference Capability
+### Report Generation
+- **Report Processing**: `tools/report_processing.py`
+  - Clinical report generation
+  - Structured text processing
+  - Metric extraction and formatting
 
+## 🚀 Quick Start Workflow
+
+### 1. Setup
 ```bash
-make inference
+make init                # Install dependencies
+make download-weights    # Download model weights
 ```
 
-This command:
-- Automatically discovers all folders in the `data/` directory
-- Processes each folder as a separate device/study
-- Generates EchoPrime reports and metrics for each folder
-- Provides a comprehensive summary of all processed folders
-- Saves individual results for each folder in `results/inference_output/`
-
-### Usage Example
+### 2. Organize Data
 ```bash
-# Place your device folders in data/
-data/
-├── device1_study/
-│   └── *.dcm files
-├── device2_study/
-│   └── *.dcm files
-└── device3_study/
-    └── *.dcm files
+# Place DICOM files in study folders
+raw_data/
+├── patient_001_study_001/
+│   ├── apical_4ch.dcm
+│   ├── apical_2ch.dcm
+│   └── parasternal_long.dcm
+└── patient_002_study_001/
+    ├── apical_4ch.dcm
+    └── subcostal.dcm
+```
 
-# Run inference on all folders
-make inference
+### 3. Run Analysis
+```bash
+make inference           # Process all studies
+```
 
-# Results will be saved to:
+### 4. View Results
+```bash
+# Results structure:
 results/inference_output/
-├── device1_study/
-│   └── results.json
-├── device2_study/
-│   └── results.json
-├── device3_study/
-│   └── results.json
-└── summary.json
+├── summary.json                    # Overall summary
+├── patient_001_study_001/
+│   ├── clinical_report.txt        # Generated report
+│   ├── metrics_predictions.json   # Predicted metrics
+│   ├── view_classifications.json  # Identified views
+│   └── quality_scores.json       # Quality assessment
+└── patient_002_study_001/
+    └── ...
 ```
 
-The inference script provides:
-- **Individual folder results**: Generated reports, predicted metrics, and processing status
-- **Summary statistics**: Total folders processed, success/failure counts, total videos processed
-- **Error handling**: Detailed error messages for failed folders
-- **Progress tracking**: Real-time progress updates during processing
+## 📊 Data Flow
+
+```mermaid
+flowchart TD
+    A[Raw DICOM Files] --> B[Preprocessing]
+    B --> C[View Classification]
+    B --> D[Feature Extraction]
+    C --> E[MIL Weighting]
+    D --> E
+    E --> F[Report Generation]
+    E --> G[Metric Prediction]
+    F --> H[Clinical Reports]
+    G --> I[Quality Scores]
+    
+    style A fill:#e3f2fd
+    style E fill:#f3e5f5
+    style H fill:#e8f5e8
+    style I fill:#e8f5e8
+```
+
+## 🎯 Key Features
+
+- **Multi-View Intelligence**: Automatically combines information from multiple echocardiographic views
+- **Quality Assessment**: Built-in video quality evaluation
+- **Comprehensive Reports**: Generates detailed clinical reports for 15 anatomical sections
+- **Flexible Processing**: Supports single studies or batch processing
+- **Docker Support**: Containerized deployment options
+- **Interactive Analysis**: Jupyter notebooks for exploration
+
+---
+
+For detailed usage instructions, see the [Getting Started Guide](GETTING_STARTED.md).
