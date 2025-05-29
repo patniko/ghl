@@ -9,7 +9,7 @@ This script:
 4. Saves as .npy files compatible with HuBERT-ECG
 
 Usage:
-    python scripts/alivecor_to_npy.py [--input_dir INPUT_DIR] [--output_dir OUTPUT_DIR] [--data_type DATA_TYPE]
+    python preprocessors/alivecor_to_npy.py [--input_dir INPUT_DIR] [--output_dir OUTPUT_DIR] [--data_type DATA_TYPE]
 """
 
 import os

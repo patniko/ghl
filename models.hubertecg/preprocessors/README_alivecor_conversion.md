@@ -28,7 +28,7 @@ The script produces NPY files with:
 ### Basic Usage
 
 ```bash
-python scripts/alivecor_to_npy.py
+python preprocessors/alivecor_to_npy.py
 ```
 
 This will:
@@ -40,7 +40,7 @@ This will:
 ### Advanced Usage
 
 ```bash
-python scripts/alivecor_to_npy.py \
+python preprocessors/alivecor_to_npy.py \
     --input_dir raw_data \
     --output_dir preprocessed_data \
     --data_type enhanced \

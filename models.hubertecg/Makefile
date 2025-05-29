@@ -75,7 +75,7 @@ dicom-prep:
 .PHONY: alivecor-prep
 alivecor-prep:
 	@echo "${YELLOW}Converting AliveCor JSON ECG files to NPY format...${NC}"
-	@$(POETRY) run python scripts/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@$(POETRY) run python preprocessors/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${GREEN}AliveCor conversion complete!${NC}"
 
 .PHONY: dicom-inference
@@ -92,7 +92,7 @@ inference:
 	@echo "${YELLOW}Converting DICOM files to NPY format...${NC}"
 	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${YELLOW}Converting AliveCor JSON files to NPY format...${NC}"
-	@$(POETRY) run python scripts/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@$(POETRY) run python preprocessors/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
 	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
 	@echo "${GREEN}Inference complete! Results saved to ./results${NC}"
