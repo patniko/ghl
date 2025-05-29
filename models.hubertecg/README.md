@@ -108,7 +108,27 @@ python run_jupyter.py
 
 ## Training and Fine-tuning
 
-### Quick Start
+### Simple Training (New!)
+For easy training with your own ECG data:
+
+```bash
+# 1. Drop your ECG files (.npy format) into training_data/raw/
+mkdir -p training_data/raw
+cp your_ecg_files/*.npy training_data/raw/
+
+# 2. Prepare the training data
+make prepare-data
+
+# 3. Edit labels in the generated CSV files
+nano training_data/metadata/train_dataset.csv
+
+# 4. Train the model
+make train
+```
+
+See [SIMPLE_TRAINING_GUIDE.md](SIMPLE_TRAINING_GUIDE.md) for detailed instructions.
+
+### Advanced Training
 ```bash
 # Pre-training
 python training/pretrain.py --data_path /path/to/ecg/data --num_epochs 100

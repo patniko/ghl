@@ -29,6 +29,7 @@ poetry.lock
 # Data
 raw_data/
 preprocessed_data/
+training_data/
 
 # Virtual Environment
 venv/

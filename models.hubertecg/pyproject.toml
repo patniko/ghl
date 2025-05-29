@@ -8,7 +8,7 @@ license = "CC BY-NC 4.0"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.9,<3.12"
 torch = ">=2.0.0"
 torchvision = ">=0.15.0"
 torchaudio = ">=2.0.0"
@@ -30,6 +30,30 @@ openpyxl = ">=3.0.0"
 iterative-stratification = ">=0.1.7"
 pydicom = ">=2.0.0,<3.0.0"
 seaborn = "^0.13.2"
+loguru = "^0.7.3"
+google-pasta = "^0.2.0"
+protobuf = "^3.20.3"
+# Training dependencies
+torchmetrics = ">=1.0.0"
+joblib = ">=1.0.0"
+h5py = ">=3.0.0"
+# Additional ML dependencies
+optuna = ">=3.0.0"
+tensorboard = ">=2.10.0"
+# File handling
+Pillow = ">=9.0.0"
+# Utilities
+psutil = ">=5.0.0"
+requests = ">=2.25.0"
+pyyaml = ">=6.0.0"
+click = ">=8.0.0"
+typer = ">=0.7.0"
+# Audio processing
+soundfile = ">=0.11.0"
+resampy = ">=0.4.0"
+audioread = ">=3.0.0"
+pooch = ">=1.6.0"
+torcheval = "^0.0.7"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "*"

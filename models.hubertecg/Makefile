@@ -27,6 +27,11 @@ help:
 	@echo "  make dicom-visualize    Create ECG signal visualizations"
 	@echo "  make visualize          Create comprehensive result visualizations"
 	@echo ""
+	@echo "${GREEN}Training Commands:${NC}"
+	@echo "  make prepare-data       Prepare ECG files for training (drop files in training_data/raw/)"
+	@echo "  make train              Train HuBERT-ECG model with prepared data"
+	@echo "  make train-from-scratch Train with random initialization (no pretrained weights)"
+	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
 	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
@@ -149,6 +154,27 @@ clean:
 test:
 	@echo "${YELLOW}Running tests...${NC}"
 	@$(POETRY) run pytest
+
+# Training commands
+.PHONY: prepare-data
+prepare-data:
+	@echo "${YELLOW}Preparing ECG training data...${NC}"
+	@echo "Looking for ECG files in training_data/raw/"
+	@$(POETRY) run python scripts/prepare_simple_training_data.py
+	@echo "${GREEN}Training data preparation complete!${NC}"
+	@echo "Next: Edit labels in training_data/metadata/*.csv files, then run 'make train'"
+
+.PHONY: train
+train:
+	@echo "${YELLOW}Training HuBERT-ECG model...${NC}"
+	@$(POETRY) run python scripts/simple_train.py --train_iteration 1
+	@echo "${GREEN}Training complete! Check training_data/checkpoints/ for saved models${NC}"
+
+.PHONY: train-from-scratch
+train-from-scratch:
+	@echo "${YELLOW}Training HuBERT-ECG model from scratch (random initialization)...${NC}"
+	@$(POETRY) run python scripts/simple_train.py --train_iteration 1 --random_init
+	@echo "${GREEN}Training complete! Check training_data/checkpoints/ for saved models${NC}"
 
 # Default target
 .DEFAULT_GOAL := help
