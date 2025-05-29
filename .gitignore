@@ -1,38 +1,53 @@
+# OS specific
 .DS_Store
-
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Environment variables and secrets
+.env
 .env.dev
 .env.prod
 
-# Poetry
-.venv/
-dist/
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Poetry
 poetry.lock
+
+# Jupyter
+.ipynb_checkpoints/
+
+# MLflow (repository-wide)
 mlflow/mlartifacts/
 mlflow/mlruns/
 
-# Temporary files
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary and build files
+dist/
+build/
+*.egg-info/
+
+# Repository-wide temporary files
 hub/ph-api/uploads/
-saved_embeddings/*
-model_data.zip
-model_data/
-.ipynb_checkpoints/
-*.pyc
-__MACOSX/._model_data
 test_output/
-
-
-models.echoquality/raw_data/
-models.echoquality/preprocessed_data/
-models.echoquality/weights/
-models.echoquality/training_data/
-models.echoquality/results/fail*
-models.echoprime/weights/
-models.echoprime/raw_data/
-models.echoprime/preprocessed_data/
-models.echoprime/results/
-models.echoprime/dicom_analysis_results.json
-models.echoprime/data_organized/
-models.echoprime/data-old/

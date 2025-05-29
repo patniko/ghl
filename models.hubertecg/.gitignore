@@ -21,20 +21,28 @@ wheels/
 *.egg
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # Poetry
+.venv/
 poetry.lock
+
+# Environment
+.env
+.env.dev
+.env.prod
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
 
 # Data
 raw_data/
 preprocessed_data/
 training_data/
-
-# Virtual Environment
-venv/
-env/
-ENV/
+results/
+weights/
 
 # IDE
 .idea/

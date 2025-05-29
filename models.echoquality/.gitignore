@@ -39,14 +39,22 @@ venv.bak/
 *.swo
 
 # Project specific
+raw_data/
+preprocessed_data/
+weights/
+training_data/
 results/
+results/fail*
 quality_results.json
 gradcam_visualization.png
 results/inference_output/
 weights/trained_models/
+data/*.dcm
+trained_models/
 
 # MLflow
 mlruns/
+mlartifacts/
 
 # Logs
 *.log
@@ -59,6 +67,3 @@ mlruns/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-data/*.dcm
-trained_models/
