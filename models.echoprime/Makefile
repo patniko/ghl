@@ -29,6 +29,7 @@ help:
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make inference          Run inference on all folders in raw_data/ directory"
 	@echo "  make train              Run model training"
+	@echo "  make visualize          Create comprehensive result visualizations"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
@@ -108,6 +109,12 @@ inference:
 	@echo "${YELLOW}Running EchoPrime inference on all folders in raw_data/ directory...${NC}"
 	@$(POETRY) run python -m inference.inference --data_dir ./raw_data --output ./results/inference_output
 	@echo "${GREEN}Inference complete! Results saved to ./results/inference_output${NC}"
+
+.PHONY: visualize
+visualize:
+	@echo "${YELLOW}Creating comprehensive result visualizations...${NC}"
+	@$(POETRY) run python scripts/visualize_results.py --results_dir ./results/inference_output --output_dir ./results/visualization_output
+	@echo "${GREEN}Result visualization complete! Check ./results/visualization_output${NC}"
 
 .PHONY: train
 train:

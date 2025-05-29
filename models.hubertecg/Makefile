@@ -112,8 +112,8 @@ dicom-visualize:
 .PHONY: visualize
 visualize:
 	@echo "${YELLOW}Creating comprehensive result visualizations...${NC}"
-	@$(POETRY) run python scripts/visualize_results.py --results_dir ./results --output_dir ./visualization_output
-	@echo "${GREEN}Result visualization complete! Check ./visualization_output${NC}"
+	@$(POETRY) run python scripts/visualize_results.py --results_dir ./results --output_dir ./results/visualization_output
+	@echo "${GREEN}Result visualization complete! Check ./results/visualization_output${NC}"
 
 # Run commands
 .PHONY: jupyter

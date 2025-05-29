@@ -27,6 +27,9 @@ pandas = "*"
 matplotlib = "*"
 tqdm = "*"
 scikit-learn = "*"
+# Visualization dependencies
+seaborn = "*"
+plotly = "*"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "*"
