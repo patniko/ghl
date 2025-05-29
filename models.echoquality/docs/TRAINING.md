@@ -1,16 +1,58 @@
-# Echo Quality Model Training Guide
+# 🎓 EchoQuality Training Guide
 
-This guide explains how to use the provided scripts to further train the echo quality model on your dataset of 100 annotated echo videos.
+Comprehensive guide for training and fine-tuning the EchoQuality model on your custom dataset.
 
-## Overview
+## 🎯 Training Overview
 
-The EchoQuality project uses a pre-trained R(2+1)D model to assess the quality of echocardiogram videos. The current implementation processes DICOM files, applies masking to isolate the ultrasound region, and classifies videos as PASS/FAIL with a threshold of 0.3.
+EchoQuality uses a pre-trained R(2+1)D convolutional neural network that can be fine-tuned on your specific dataset. The training pipeline supports transfer learning, data augmentation, and comprehensive evaluation to ensure optimal performance on your echo data.
 
-We've created three main scripts to help you further train the model:
+```mermaid
+graph TB
+    subgraph "Data Preparation"
+        A[Raw DICOM Files]
+        B[Quality Annotations]
+        C[Data Preprocessing]
+        D[Train/Val/Test Split]
+    end
+    
+    subgraph "Model Training"
+        E[Pre-trained R2+1D Model]
+        F[Transfer Learning]
+        G[Fine-tuning]
+        H[Validation]
+    end
+    
+    subgraph "Evaluation"
+        I[Performance Metrics]
+        J[GradCAM Analysis]
+        K[Model Comparison]
+        L[Best Model Selection]
+    end
+    
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+    
+    style A fill:#e3f2fd
+    style E fill:#f3e5f5
+    style I fill:#e8f5e8
+```
 
-1. `train_quality_model.py` - The main training script
-2. `echo_data_augmentation.py` - Data augmentation utilities
-3. `echo_model_evaluation.py` - Model evaluation and visualization tools
+## 🛠️ Training Components
+
+The training system consists of three main components:
+
+1. **`train_quality_model.py`** - Main training script with MLflow integration
+2. **`echo_data_augmentation.py`** - Advanced data augmentation utilities
+3. **`echo_model_evaluation.py`** - Comprehensive model evaluation and visualization
 
 ## Prerequisites
 

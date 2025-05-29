@@ -1,8 +1,56 @@
-# EchoQuality Inference Pipeline Documentation
+# ⚙️ EchoQuality Pipeline Documentation
 
-## Overview
+Comprehensive technical documentation of the EchoQuality inference pipeline, covering every step from DICOM input to quality assessment output.
 
-The `make inference` command provides a comprehensive pipeline for running quality assessment on echocardiogram DICOM files. This pipeline processes raw DICOM files, extracts and saves processed images, runs AI-based quality assessment, and generates detailed reports with error tracking.
+## 🎯 Pipeline Overview
+
+The EchoQuality pipeline is a sophisticated AI-powered system that processes echocardiogram DICOM files through multiple stages to assess their quality. The pipeline combines computer vision preprocessing, deep learning inference, and comprehensive error tracking to provide reliable quality assessments.
+
+```mermaid
+graph TB
+    subgraph "Input Stage"
+        A[Raw DICOM Files]
+        B[Directory Scanner]
+    end
+    
+    subgraph "Preprocessing Stage"
+        C[DICOM Reader]
+        D[Validation]
+        E[Ultrasound Masking]
+        F[Frame Extraction]
+        G[Scaling & Cropping]
+    end
+    
+    subgraph "AI Inference Stage"
+        H[R2+1D CNN Model]
+        I[Quality Scoring]
+        J[Pass/Fail Classification]
+    end
+    
+    subgraph "Output Stage"
+        K[Results Generation]
+        L[Visualization]
+        M[Error Reporting]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+    K --> L
+    K --> M
+    
+    style A fill:#e3f2fd
+    style H fill:#f3e5f5
+    style K fill:#e8f5e8
+    style M fill:#ffebee
+```
 
 ## Command Usage
 
