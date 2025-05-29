@@ -108,7 +108,7 @@ download-weights:
 .PHONY: jupyter
 jupyter:
 	@echo "${YELLOW}Starting Jupyter notebook on port $(JUPYTER_PORT)${NC}"
-	@$(POETRY) run python run_jupyter.py --port $(JUPYTER_PORT)
+	@$(POETRY) run python scripts/run_jupyter.py --port $(JUPYTER_PORT)
 
 .PHONY: training-data
 training-data:
