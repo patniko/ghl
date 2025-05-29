@@ -45,7 +45,7 @@ help:
 
 # Setup commands
 .PHONY: init
-setup:
+init:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
@@ -76,11 +76,11 @@ download-weights:
 		echo "view_classifier.ckpt already exists."; \
 	fi
 	
-	@if [ ! -f "weights/candidates_data/candidates_data.zip" ]; then \
+	@if [ ! -f "weights/candidates_data.zip" ]; then \
 		echo "Downloading candidates_data.zip..."; \
-		wget -q --show-progress $(CANDIDATES_DATA_URL) -O weights/candidates_data/candidates_data.zip; \
+		wget -q --show-progress $(CANDIDATES_DATA_URL) -O weights/candidates_data.zip; \
 		echo "Extracting candidates_data.zip..."; \
-		cd weights/candidates_data && unzip -q candidates_data.zip && rm candidates_data.zip; \
+		cd weights/ && unzip -q candidates_data.zip && rm candidates_data.zip; \
 	else \
 		echo "candidates_data.zip already exists."; \
 	fi

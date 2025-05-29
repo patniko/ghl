@@ -24,7 +24,6 @@ help:
 	@echo "${GREEN}Setup Commands:${NC}"
 	@echo "  make init               Setup Poetry environment"
 	@echo "  make download-weights   Download model weights and embeddings"
-	@echo "  make setup-all          Setup environment and download weights"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make inference          Run inference on all folders in raw_data/ directory"
@@ -46,7 +45,7 @@ help:
 
 # Setup commands
 .PHONY: init
-setup:
+init:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
@@ -70,11 +69,11 @@ download-weights:
 		echo "view_classifier.ckpt already exists."; \
 	fi
 	
-	@if [ ! -f "weights/candidates_data/candidates_data.zip" ]; then \
+	@if [ ! -f "weights/candidates_data.zip" ]; then \
 		echo "Downloading candidates_data.zip..."; \
-		wget -q --show-progress $(CANDIDATES_DATA_URL) -O weights/candidates_data/candidates_data.zip; \
+		wget -q --show-progress $(CANDIDATES_DATA_URL) -O weights/candidates_data.zip; \
 		echo "Extracting candidates_data.zip..."; \
-		cd weights/candidates_data && unzip -q candidates_data.zip && rm candidates_data.zip; \
+		cd weights/ && unzip -q candidates_data.zip && rm candidates_data.zip; \
 	else \
 		echo "candidates_data.zip already exists."; \
 	fi
@@ -165,10 +164,6 @@ clean:
 	@find . -type d -name "htmlcov" -exec rm -rf {} +
 	@find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
 	@echo "${GREEN}Cleanup complete!${NC}"
-
-# All-in-one setup command
-.PHONY: setup-all
-all: setup download-weights
 
 # Default target
 .DEFAULT_GOAL := help
