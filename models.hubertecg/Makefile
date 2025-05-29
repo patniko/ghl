@@ -1,0 +1,198 @@
+# Makefile for HuBERT-ECG project
+# Provides easy commands for running Jupyter, and Docker tasks
+
+# Variables
+PYTHON := python3
+POETRY := poetry
+JUPYTER_PORT := 8888
+
+# Colors for terminal output
+YELLOW := \033[1;33m
+GREEN := \033[1;32m
+NC := \033[0m # No Color
+
+# Help command
+.PHONY: help
+help:
+	@echo "${YELLOW}HuBERT-ECG Makefile Commands:${NC}"
+	@echo ""
+	@echo "${GREEN}Setup Commands:${NC}"
+	@echo "  make setup              Setup Poetry environment"
+	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
+	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
+	@echo "  make dicom-prep         Convert DICOM ECG files to NPY format"
+	@echo "  make alivecor-prep      Convert AliveCor JSON ECG files to NPY format"
+	@echo "  make dicom-inference    Run HuBERT-ECG inference on converted DICOM files"
+	@echo "  make dicom-metadata     Extract comprehensive metadata from DICOM files"
+	@echo "  make dicom-visualize    Create ECG signal visualizations"
+	@echo "  make visualize          Create comprehensive result visualizations"
+	@echo ""
+	@echo "${GREEN}Training Commands:${NC}"
+	@echo "  make prepare-data       Prepare ECG files for training (drop files in training_data/raw/)"
+	@echo "  make train              Train HuBERT-ECG model with prepared data"
+	@echo "  make train-from-scratch Train with random initialization (no pretrained weights)"
+	@echo ""
+	@echo "${GREEN}Run Commands:${NC}"
+	@echo "  make jupyter            Run Jupyter notebook"
+	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
+	@echo ""
+	@echo "${GREEN}Docker Commands:${NC}"
+	@echo "  make build-docker       Build the Docker image"
+	@echo "  make build-jupyter      Build the Docker image for Jupyter"
+	@echo "  make run-docker         Run Docker container"
+	@echo "  make run-jupyter        Run Jupyter in a Docker container"
+	@echo ""
+	@echo "${GREEN}Utility Commands:${NC}"
+	@echo "  make clean              Clean up temporary files"
+	@echo "  make test               Run tests"
+	@echo ""
+	@echo "Example usage:"
+	@echo "  make jupyter JUPYTER_PORT=8889"
+
+# Setup commands
+.PHONY: setup
+setup:
+	@echo "${YELLOW}Setting up Poetry environment...${NC}"
+	@$(POETRY) install
+
+.PHONY: setup-dev
+setup-dev:
+	@echo "${YELLOW}Setting up Poetry environment with dev dependencies...${NC}"
+	@$(POETRY) install --with dev
+
+.PHONY: ptbxl-setup
+ptbxl-setup:
+	@echo "${YELLOW}Setting up PTB-XL dataset...${NC}"
+	@$(POETRY) run python scripts/setup_ptbxl.py
+	@echo "${GREEN}PTB-XL dataset setup complete!${NC}"
+
+.PHONY: dicom-prep
+dicom-prep:
+	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
+	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${GREEN}DICOM conversion complete!${NC}"
+
+.PHONY: alivecor-prep
+alivecor-prep:
+	@echo "${YELLOW}Converting AliveCor JSON ECG files to NPY format...${NC}"
+	@$(POETRY) run python preprocessors/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${GREEN}AliveCor conversion complete!${NC}"
+
+.PHONY: dicom-inference
+dicom-inference:
+	@echo "${YELLOW}Running HuBERT-ECG inference on converted DICOM files...${NC}"
+	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
+	@echo "${GREEN}DICOM inference complete!${NC}"
+
+.PHONY: inference
+inference:
+	@echo "${YELLOW}Cleaning results and preprocessed_data for clean run...${NC}"
+	@rm -rf ./results/*
+	@rm -rf ./preprocessed_data/*
+	@echo "${YELLOW}Converting DICOM files to NPY format...${NC}"
+	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${YELLOW}Converting AliveCor JSON files to NPY format...${NC}"
+	@$(POETRY) run python preprocessors/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
+	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
+	@echo "${GREEN}Inference complete! Results saved to ./results${NC}"
+
+.PHONY: dicom-metadata
+dicom-metadata:
+	@echo "${YELLOW}Extracting comprehensive metadata from DICOM files...${NC}"
+	@$(POETRY) run python scripts/dump_dicom_metadata.py
+	@echo "${GREEN}DICOM metadata extraction complete!${NC}"
+
+.PHONY: dicom-visualize
+dicom-visualize:
+	@echo "${YELLOW}Creating ECG signal visualizations...${NC}"
+	@$(POETRY) run python scripts/visualize_ecg_signals.py
+	@echo "${GREEN}ECG visualization complete!${NC}"
+
+.PHONY: visualize
+visualize:
+	@echo "${YELLOW}Creating comprehensive result visualizations...${NC}"
+	@$(POETRY) run python scripts/visualize_results.py --results_dir ./results --output_dir ./visualization_output
+	@echo "${GREEN}Result visualization complete! Check ./visualization_output${NC}"
+
+# Run commands
+.PHONY: jupyter
+jupyter:
+	@echo "${YELLOW}Starting Jupyter notebook on port $(JUPYTER_PORT)${NC}"
+	@$(POETRY) run python run_jupyter.py --port $(JUPYTER_PORT)
+
+# Docker commands
+.PHONY: build-docker
+build-docker:
+	@echo "${YELLOW}Building Docker image...${NC}"
+	@docker build -t hubertecg .
+	@echo "${GREEN}Docker image built successfully!${NC}"
+
+.PHONY: build-jupyter
+build-jupyter:
+	@echo "${YELLOW}Building Docker image for Jupyter...${NC}"
+	@docker build -t hubertecg-jupyter -f Dockerfile.jupyter .
+	@echo "${GREEN}Jupyter Docker image built successfully!${NC}"
+
+.PHONY: run-docker
+run-docker:
+	@echo "${YELLOW}Running Docker container...${NC}"
+	@docker run -d --name hubertecg-container -p $(JUPYTER_PORT):8888 hubertecg
+	@echo "${GREEN}Docker container started!${NC}"
+	@echo "You can access Jupyter notebook at http://localhost:$(JUPYTER_PORT)"
+	@echo "To attach to the container: docker exec -it hubertecg-container /bin/bash"
+
+.PHONY: run-jupyter
+run-jupyter:
+	@echo "${YELLOW}Running Jupyter Docker container...${NC}"
+	@docker run -it --rm -p $(JUPYTER_PORT):8888 -v $(PWD):/workspace hubertecg-jupyter
+	@echo "${GREEN}Jupyter Docker container started!${NC}"
+
+# Utility commands
+.PHONY: clean
+clean:
+	@echo "${YELLOW}Cleaning up temporary files...${NC}"
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type f -name "*.pyc" -delete
+	@find . -type f -name "*.pyo" -delete
+	@find . -type f -name "*.pyd" -delete
+	@find . -type f -name ".DS_Store" -delete
+	@find . -type d -name "*.egg-info" -exec rm -rf {} +
+	@find . -type d -name "*.egg" -exec rm -rf {} +
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} +
+	@find . -type d -name ".coverage" -exec rm -rf {} +
+	@find . -type d -name "htmlcov" -exec rm -rf {} +
+	@find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+	@rm -rf build/
+	@rm -rf dist/
+	@rm -rf .coverage
+	@echo "${GREEN}Cleanup complete!${NC}"
+
+.PHONY: test
+test:
+	@echo "${YELLOW}Running tests...${NC}"
+	@$(POETRY) run pytest
+
+# Training commands
+.PHONY: prepare-data
+prepare-data:
+	@echo "${YELLOW}Preparing ECG training data...${NC}"
+	@echo "Looking for ECG files in training_data/raw/"
+	@$(POETRY) run python scripts/prepare_simple_training_data.py
+	@echo "${GREEN}Training data preparation complete!${NC}"
+	@echo "Next: Edit labels in training_data/metadata/*.csv files, then run 'make train'"
+
+.PHONY: train
+train:
+	@echo "${YELLOW}Training HuBERT-ECG model...${NC}"
+	@$(POETRY) run python scripts/simple_train.py --train_iteration 1
+	@echo "${GREEN}Training complete! Check training_data/checkpoints/ for saved models${NC}"
+
+.PHONY: train-from-scratch
+train-from-scratch:
+	@echo "${YELLOW}Training HuBERT-ECG model from scratch (random initialization)...${NC}"
+	@$(POETRY) run python scripts/simple_train.py --train_iteration 1 --random_init
+	@echo "${GREEN}Training complete! Check training_data/checkpoints/ for saved models${NC}"
+
+# Default target
+.DEFAULT_GOAL := help

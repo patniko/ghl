@@ -1,0 +1,14 @@
+patient,filename,original_shape,preprocessed_shape,features_shape,features_file,status
+PATIENTA,9C687DB1.npy,"(12, 5000)","torch.Size([1, 12000])","(1, 187, 768)",PATIENTA/9C687DB1_features.npy,success
+PATIENT-ALIVECOR,alivecor-5.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-5_features.npy,success
+PATIENT-ALIVECOR,alivecor-9.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-9_features.npy,success
+PATIENT-ALIVECOR,alivecor-1.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-1_features.npy,success
+PATIENT-ALIVECOR,alivecor-4.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-4_features.npy,success
+PATIENT-ALIVECOR,alivecor-3.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-3_features.npy,success
+PATIENT-ALIVECOR,alivecor-8.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-8_features.npy,success
+PATIENT-ALIVECOR,alivecor-10.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-10_features.npy,success
+PATIENT-ALIVECOR,alivecor-6.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-6_features.npy,success
+PATIENT-ALIVECOR,alivecor-7.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-7_features.npy,success
+PATIENT-ALIVECOR,alivecor-2.npy,"(6, 5000)","torch.Size([1, 6000])","(1, 93, 768)",PATIENT-ALIVECOR/alivecor-2_features.npy,success
+PATIENTB,75C6B3C1.npy,"(12, 5000)","torch.Size([1, 12000])","(1, 187, 768)",PATIENTB/75C6B3C1_features.npy,success
+PATIENTC,93C7C5AD.npy,"(12, 5000)","torch.Size([1, 12000])","(1, 187, 768)",PATIENTC/93C7C5AD_features.npy,success
