@@ -5,6 +5,12 @@
 PYTHON := python3
 POETRY := poetry
 JUPYTER_PORT := 8888
+VIDEO_QUALITY_MODEL_URL := https://github.com/patniko/ghl/releases/download/v1.0.0/video_quality_model.pt
+CANDIDATES_DATA_URL := https://github.com/patniko/ghl/releases/download/v1.0.0/candidates_data.zip
+EMBEDDING_P1_URL := https://github.com/patniko/ghl/releases/download/v1.0.0/candidate_embeddings_p1.pt
+EMBEDDING_P2_URL := https://github.com/patniko/ghl/releases/download/v1.0.0/candidate_embeddings_p2.pt
+ECHO_PRIME_ENCODER_URL := https://github.com/patniko/ghl/releases/download/v1.0.0/echo_prime_encoder.pt
+VIEW_CLASSIFIER_URL := https://github.com/patniko/ghl/releases/download/v1.0.0/view_classifier.ckpt
 
 # Colors for terminal output
 YELLOW := \033[1;33m
@@ -18,6 +24,7 @@ help:
 	@echo ""
 	@echo "${GREEN}Setup Commands:${NC}"
 	@echo "  make init               Setup Poetry environment"
+	@echo "  make download-weights   Download model weights"
 	@echo "  make prepare-data       Prepare training data from inference results"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
@@ -41,6 +48,57 @@ setup:
 	@echo "${YELLOW}Setting up Poetry environment...${NC}"
 	@$(POETRY) install
 	@echo "${GREEN}Poetry environment setup complete!${NC}"
+
+.PHONY: download-weights
+download-weights:
+	@echo "${YELLOW}Downloading model weights and embeddings...${NC}"
+	@mkdir -p weights/candidates_data
+	
+	@if [ ! -f "weights/video_quality_model.pt" ]; then \
+		echo "Downloading video_quality_model.pt..."; \
+		wget -q --show-progress $(VIDEO_QUALITY_MODEL_URL) -O weights/video_quality_model.pt; \
+	else \
+		echo "video_quality_model.pt already exists."; \
+	fi
+	
+	@if [ ! -f "weights/echo_prime_encoder.pt" ]; then \
+		echo "Downloading echo_prime_encoder.pt..."; \
+		wget -q --show-progress $(ECHO_PRIME_ENCODER_URL) -O weights/echo_prime_encoder.pt; \
+	else \
+		echo "echo_prime_encoder.pt already exists."; \
+	fi
+	
+	@if [ ! -f "weights/view_classifier.ckpt" ]; then \
+		echo "Downloading view_classifier.ckpt..."; \
+		wget -q --show-progress $(VIEW_CLASSIFIER_URL) -O weights/view_classifier.ckpt; \
+	else \
+		echo "view_classifier.ckpt already exists."; \
+	fi
+	
+	@if [ ! -f "weights/candidates_data/candidates_data.zip" ]; then \
+		echo "Downloading candidates_data.zip..."; \
+		wget -q --show-progress $(CANDIDATES_DATA_URL) -O weights/candidates_data/candidates_data.zip; \
+		echo "Extracting candidates_data.zip..."; \
+		cd weights/candidates_data && unzip -q candidates_data.zip && rm candidates_data.zip; \
+	else \
+		echo "candidates_data.zip already exists."; \
+	fi
+	
+	@if [ ! -f "weights/candidates_data/candidate_embeddings_p1.pt" ]; then \
+		echo "Downloading candidate_embeddings_p1.pt..."; \
+		wget -q --show-progress $(EMBEDDING_P1_URL) -O weights/candidates_data/candidate_embeddings_p1.pt; \
+	else \
+		echo "candidate_embeddings_p1.pt already exists."; \
+	fi
+	
+	@if [ ! -f "weights/candidates_data/candidate_embeddings_p2.pt" ]; then \
+		echo "Downloading candidate_embeddings_p2.pt..."; \
+		wget -q --show-progress $(EMBEDDING_P2_URL) -O weights/candidates_data/candidate_embeddings_p2.pt; \
+	else \
+		echo "candidate_embeddings_p2.pt already exists."; \
+	fi
+	
+	@echo "${GREEN}Model weights and embeddings download complete!${NC}"
 
 # Run commands
 .PHONY: jupyter
