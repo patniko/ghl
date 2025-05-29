@@ -20,10 +20,12 @@ help:
 	@echo "  make setup              Setup Poetry environment"
 	@echo "  make setup-dev          Setup Poetry environment with dev dependencies"
 	@echo "  make ptbxl-setup        Download and setup the PTB-XL dataset"
-	@echo "  make dicom-prep        Convert DICOM ECG files to NPY format"
+	@echo "  make dicom-prep         Convert DICOM ECG files to NPY format"
+	@echo "  make alivecor-prep      Convert AliveCor JSON ECG files to NPY format"
 	@echo "  make dicom-inference    Run HuBERT-ECG inference on converted DICOM files"
 	@echo "  make dicom-metadata     Extract comprehensive metadata from DICOM files"
 	@echo "  make dicom-visualize    Create ECG signal visualizations"
+	@echo "  make visualize          Create comprehensive result visualizations"
 	@echo ""
 	@echo "${GREEN}Run Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
@@ -58,10 +60,16 @@ ptbxl-setup:
 	@echo "${GREEN}PTB-XL dataset setup complete!${NC}"
 
 .PHONY: dicom-prep
-dicom-setup:
+dicom-prep:
 	@echo "${YELLOW}Converting DICOM ECG files to NPY format...${NC}"
 	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${GREEN}DICOM conversion complete!${NC}"
+
+.PHONY: alivecor-prep
+alivecor-prep:
+	@echo "${YELLOW}Converting AliveCor JSON ECG files to NPY format...${NC}"
+	@$(POETRY) run python scripts/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${GREEN}AliveCor conversion complete!${NC}"
 
 .PHONY: dicom-inference
 dicom-inference:
@@ -76,6 +84,8 @@ inference:
 	@rm -rf ./preprocessed_data/*
 	@echo "${YELLOW}Converting DICOM files to NPY format...${NC}"
 	@$(POETRY) run python scripts/dicom_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
+	@echo "${YELLOW}Converting AliveCor JSON files to NPY format...${NC}"
+	@$(POETRY) run python scripts/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
 	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
 	@echo "${GREEN}Inference complete! Results saved to ./results${NC}"
@@ -91,6 +101,12 @@ dicom-visualize:
 	@echo "${YELLOW}Creating ECG signal visualizations...${NC}"
 	@$(POETRY) run python scripts/visualize_ecg_signals.py
 	@echo "${GREEN}ECG visualization complete!${NC}"
+
+.PHONY: visualize
+visualize:
+	@echo "${YELLOW}Creating comprehensive result visualizations...${NC}"
+	@$(POETRY) run python scripts/visualize_results.py --results_dir ./results --output_dir ./visualization_output
+	@echo "${GREEN}Result visualization complete! Check ./visualization_output${NC}"
 
 # Run commands
 .PHONY: jupyter

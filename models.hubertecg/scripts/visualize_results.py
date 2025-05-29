@@ -86,7 +86,7 @@ class HuBERTFeatureVisualizer:
         if n_patients == 1:
             axes = [axes]
         
-        fig.suptitle('HuBERT-ECG Feature Heatmaps (187 Time Steps × 768 Features)', fontsize=16)
+        fig.suptitle('HuBERT-ECG Feature Heatmaps (Variable Time Steps × 768 Features)', fontsize=16)
         
         for i, (patient, data) in enumerate(self.features_data.items()):
             features = data['features']
@@ -96,7 +96,7 @@ class HuBERTFeatureVisualizer:
             # Create heatmap
             im = axes[i].imshow(features.T, aspect='auto', cmap='viridis', interpolation='nearest')
             axes[i].set_title(f'{patient} - Feature Heatmap\n{data["filename"]} | Shape: {features.shape}')
-            axes[i].set_xlabel('Time Steps (187)')
+            axes[i].set_xlabel(f'Time Steps ({features.shape[0]})')
             axes[i].set_ylabel('Feature Dimensions (768)')
             
             # Add colorbar
@@ -104,7 +104,8 @@ class HuBERTFeatureVisualizer:
             cbar.set_label('Feature Value')
             
             # Add grid lines for better readability
-            axes[i].set_xticks(np.arange(0, 187, 20))
+            time_step_interval = max(1, features.shape[0] // 10)
+            axes[i].set_xticks(np.arange(0, features.shape[0], time_step_interval))
             axes[i].set_yticks(np.arange(0, 768, 100))
             axes[i].grid(True, alpha=0.3)
         
@@ -118,12 +119,17 @@ class HuBERTFeatureVisualizer:
         """Create plots showing how features evolve over time."""
         print("Creating temporal evolution plots...")
         
-        # Calculate temporal statistics
+        # Calculate temporal statistics and determine max time steps
         temporal_stats = {}
+        max_time_steps = 0
+        
         for patient, data in self.features_data.items():
             features = data['features']
             if features.ndim == 3 and features.shape[0] == 1:
                 features = features.squeeze(0)
+            
+            time_steps = features.shape[0]
+            max_time_steps = max(max_time_steps, time_steps)
             
             temporal_stats[patient] = {
                 'mean': np.mean(features, axis=1),
@@ -132,18 +138,18 @@ class HuBERTFeatureVisualizer:
                 'min': np.min(features, axis=1),
                 'median': np.median(features, axis=1),
                 'q75': np.percentile(features, 75, axis=1),
-                'q25': np.percentile(features, 25, axis=1)
+                'q25': np.percentile(features, 25, axis=1),
+                'time_steps': time_steps
             }
         
         # Create comprehensive temporal plots
         fig, axes = plt.subplots(3, 2, figsize=(16, 12))
         fig.suptitle('Temporal Evolution of HuBERT-ECG Features', fontsize=16)
         
-        time_steps = np.arange(187)
-        
         # Plot 1: Mean evolution
         for patient, stats in temporal_stats.items():
-            axes[0, 0].plot(time_steps, stats['mean'], label=patient, linewidth=2, alpha=0.8)
+            patient_time_steps = np.arange(stats['time_steps'])
+            axes[0, 0].plot(patient_time_steps, stats['mean'], label=f"{patient} ({stats['time_steps']} steps)", linewidth=2, alpha=0.8)
         axes[0, 0].set_title('Mean Feature Values Over Time')
         axes[0, 0].set_xlabel('Time Step')
         axes[0, 0].set_ylabel('Mean Feature Value')
@@ -152,7 +158,8 @@ class HuBERTFeatureVisualizer:
         
         # Plot 2: Standard deviation evolution
         for patient, stats in temporal_stats.items():
-            axes[0, 1].plot(time_steps, stats['std'], label=patient, linewidth=2, alpha=0.8)
+            patient_time_steps = np.arange(stats['time_steps'])
+            axes[0, 1].plot(patient_time_steps, stats['std'], label=f"{patient} ({stats['time_steps']} steps)", linewidth=2, alpha=0.8)
         axes[0, 1].set_title('Feature Variability Over Time')
         axes[0, 1].set_xlabel('Time Step')
         axes[0, 1].set_ylabel('Standard Deviation')
@@ -161,8 +168,9 @@ class HuBERTFeatureVisualizer:
         
         # Plot 3: Range evolution (max-min)
         for patient, stats in temporal_stats.items():
+            patient_time_steps = np.arange(stats['time_steps'])
             range_vals = stats['max'] - stats['min']
-            axes[1, 0].plot(time_steps, range_vals, label=patient, linewidth=2, alpha=0.8)
+            axes[1, 0].plot(patient_time_steps, range_vals, label=f"{patient} ({stats['time_steps']} steps)", linewidth=2, alpha=0.8)
         axes[1, 0].set_title('Feature Range Over Time')
         axes[1, 0].set_xlabel('Time Step')
         axes[1, 0].set_ylabel('Range (Max - Min)')
@@ -171,8 +179,9 @@ class HuBERTFeatureVisualizer:
         
         # Plot 4: Median evolution with quartiles
         for patient, stats in temporal_stats.items():
-            axes[1, 1].plot(time_steps, stats['median'], label=f'{patient} (median)', linewidth=2)
-            axes[1, 1].fill_between(time_steps, stats['q25'], stats['q75'], alpha=0.2)
+            patient_time_steps = np.arange(stats['time_steps'])
+            axes[1, 1].plot(patient_time_steps, stats['median'], label=f"{patient} (median, {stats['time_steps']} steps)", linewidth=2)
+            axes[1, 1].fill_between(patient_time_steps, stats['q25'], stats['q75'], alpha=0.2)
         axes[1, 1].set_title('Median Features with Quartiles')
         axes[1, 1].set_xlabel('Time Step')
         axes[1, 1].set_ylabel('Feature Value')
@@ -185,13 +194,15 @@ class HuBERTFeatureVisualizer:
             if features.ndim == 3 and features.shape[0] == 1:
                 features = features.squeeze(0)
             
+            patient_time_steps = np.arange(features.shape[0])
+            
             # Find highly active features (top 10% by variance)
             feature_vars = np.var(features, axis=0)
             top_features_idx = np.argsort(feature_vars)[-int(0.1 * len(feature_vars)):]
             
             # Plot mean of top features over time
             top_features_mean = np.mean(features[:, top_features_idx], axis=1)
-            axes[2, 0].plot(time_steps, top_features_mean, label=patient, linewidth=2, alpha=0.8)
+            axes[2, 0].plot(patient_time_steps, top_features_mean, label=f"{patient} ({features.shape[0]} steps)", linewidth=2, alpha=0.8)
         
         axes[2, 0].set_title('High-Variance Features Over Time')
         axes[2, 0].set_xlabel('Time Step')
@@ -205,10 +216,12 @@ class HuBERTFeatureVisualizer:
             if features.ndim == 3 and features.shape[0] == 1:
                 features = features.squeeze(0)
             
+            patient_time_steps = np.arange(features.shape[0])
+            
             # Calculate cumulative energy (sum of squared features)
             energy_per_timestep = np.sum(features**2, axis=1)
             cumulative_energy = np.cumsum(energy_per_timestep)
-            axes[2, 1].plot(time_steps, cumulative_energy, label=patient, linewidth=2, alpha=0.8)
+            axes[2, 1].plot(patient_time_steps, cumulative_energy, label=f"{patient} ({features.shape[0]} steps)", linewidth=2, alpha=0.8)
         
         axes[2, 1].set_title('Cumulative Feature Energy')
         axes[2, 1].set_xlabel('Time Step')
@@ -370,23 +383,40 @@ class HuBERTFeatureVisualizer:
                 if features2.ndim == 3 and features2.shape[0] == 1:
                     features2 = features2.squeeze(0)
                 
-                # Plot 1: Feature difference heatmap
-                diff = features1 - features2
-                im1 = axes[pair_idx, 0].imshow(diff.T, aspect='auto', cmap='RdBu_r', 
-                                              vmin=-np.max(np.abs(diff)), vmax=np.max(np.abs(diff)))
-                axes[pair_idx, 0].set_title(f'{patient1} - {patient2}\nFeature Differences')
+                # Plot 1: Feature difference heatmap (only if same shape)
+                if features1.shape == features2.shape:
+                    diff = features1 - features2
+                    im1 = axes[pair_idx, 0].imshow(diff.T, aspect='auto', cmap='RdBu_r', 
+                                                  vmin=-np.max(np.abs(diff)), vmax=np.max(np.abs(diff)))
+                    axes[pair_idx, 0].set_title(f'{patient1} - {patient2}\nFeature Differences')
+                    plt.colorbar(im1, ax=axes[pair_idx, 0], fraction=0.046, pad=0.04)
+                else:
+                    # Show both heatmaps side by side when shapes differ
+                    min_time = min(features1.shape[0], features2.shape[0])
+                    combined = np.concatenate([features1[:min_time, :], features2[:min_time, :]], axis=0)
+                    im1 = axes[pair_idx, 0].imshow(combined.T, aspect='auto', cmap='viridis')
+                    axes[pair_idx, 0].axvline(x=min_time-0.5, color='red', linestyle='--', linewidth=2)
+                    axes[pair_idx, 0].set_title(f'{patient1} | {patient2}\nConcatenated Features (Different Shapes)')
+                    plt.colorbar(im1, ax=axes[pair_idx, 0], fraction=0.046, pad=0.04)
+                
                 axes[pair_idx, 0].set_xlabel('Time Steps')
                 axes[pair_idx, 0].set_ylabel('Features')
-                plt.colorbar(im1, ax=axes[pair_idx, 0], fraction=0.046, pad=0.04)
                 
                 # Plot 2: Temporal mean comparison
                 mean1 = np.mean(features1, axis=1)
                 mean2 = np.mean(features2, axis=1)
-                time_steps = np.arange(187)
                 
-                axes[pair_idx, 1].plot(time_steps, mean1, label=patient1, linewidth=2)
-                axes[pair_idx, 1].plot(time_steps, mean2, label=patient2, linewidth=2)
-                axes[pair_idx, 1].fill_between(time_steps, mean1, mean2, alpha=0.3)
+                # Handle different time dimensions
+                if features1.shape[0] == features2.shape[0]:
+                    time_steps = np.arange(features1.shape[0])
+                    axes[pair_idx, 1].plot(time_steps, mean1, label=patient1, linewidth=2)
+                    axes[pair_idx, 1].plot(time_steps, mean2, label=patient2, linewidth=2)
+                    axes[pair_idx, 1].fill_between(time_steps, mean1, mean2, alpha=0.3)
+                else:
+                    time_steps1 = np.arange(features1.shape[0])
+                    time_steps2 = np.arange(features2.shape[0])
+                    axes[pair_idx, 1].plot(time_steps1, mean1, label=f'{patient1} ({features1.shape[0]} steps)', linewidth=2)
+                    axes[pair_idx, 1].plot(time_steps2, mean2, label=f'{patient2} ({features2.shape[0]} steps)', linewidth=2)
                 axes[pair_idx, 1].set_title('Temporal Mean Comparison')
                 axes[pair_idx, 1].set_xlabel('Time Steps')
                 axes[pair_idx, 1].set_ylabel('Mean Feature Value')
@@ -394,9 +424,17 @@ class HuBERTFeatureVisualizer:
                 axes[pair_idx, 1].grid(True, alpha=0.3)
                 
                 # Plot 3: Feature correlation
+                # Handle different shapes by using minimum dimensions
+                min_time_steps = min(features1.shape[0], features2.shape[0])
+                min_features = min(features1.shape[1], features2.shape[1])
+                
+                # Truncate to common dimensions
+                features1_trunc = features1[:min_time_steps, :min_features]
+                features2_trunc = features2[:min_time_steps, :min_features]
+                
                 # Flatten features for correlation
-                flat1 = features1.flatten()
-                flat2 = features2.flatten()
+                flat1 = features1_trunc.flatten()
+                flat2 = features2_trunc.flatten()
                 
                 # Sample points for scatter plot (too many points otherwise)
                 n_sample = min(5000, len(flat1))
@@ -438,15 +476,15 @@ class HuBERTFeatureVisualizer:
                 
                 fig = go.Figure(data=go.Heatmap(
                     z=features.T,
-                    x=list(range(187)),
+                    x=list(range(features.shape[0])),
                     y=list(range(768)),
                     colorscale='Viridis',
                     hoverongaps=False
                 ))
                 
                 fig.update_layout(
-                    title=f'{patient} - Interactive Feature Heatmap<br>{data["filename"]}',
-                    xaxis_title='Time Steps (187)',
+                    title=f'{patient} - Interactive Feature Heatmap<br>{data["filename"]} | Shape: {features.shape}',
+                    xaxis_title=f'Time Steps ({features.shape[0]})',
                     yaxis_title='Feature Dimensions (768)',
                     width=1000,
                     height=600
@@ -468,10 +506,10 @@ class HuBERTFeatureVisualizer:
                     mean_features = np.mean(features, axis=1)
                     
                     fig.add_trace(go.Scatter(
-                        x=list(range(187)),
+                        x=list(range(features.shape[0])),
                         y=mean_features,
                         mode='lines',
-                        name=patient,
+                        name=f'{patient} ({features.shape[0]} steps)',
                         line=dict(width=3)
                     ))
                 
@@ -597,9 +635,16 @@ class HuBERTFeatureVisualizer:
                         if features2.ndim == 3 and features2.shape[0] == 1:
                             features2 = features2.squeeze(0)
                         
-                        # Calculate cosine similarity
-                        flat1 = features1.flatten()
-                        flat2 = features2.flatten()
+                        # Calculate cosine similarity using common dimensions
+                        min_time_steps = min(features1.shape[0], features2.shape[0])
+                        min_features = min(features1.shape[1], features2.shape[1])
+                        
+                        # Truncate to common dimensions
+                        features1_trunc = features1[:min_time_steps, :min_features]
+                        features2_trunc = features2[:min_time_steps, :min_features]
+                        
+                        flat1 = features1_trunc.flatten()
+                        flat2 = features2_trunc.flatten()
                         similarity = np.dot(flat1, flat2) / (np.linalg.norm(flat1) * np.linalg.norm(flat2))
                         similarity_matrix[i, j] = similarity
             
