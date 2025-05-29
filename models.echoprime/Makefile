@@ -30,7 +30,9 @@ help:
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
 	@echo "  make build-docker       Build the Docker image"
+	@echo "  make build-jupyter      Build the Docker image for Jupyter"
 	@echo "  make run-docker         Run Docker container"
+	@echo "  make run-jupyter        Run Jupyter Docker container"
 	@echo ""
 	@echo "${GREEN}Utility Commands:${NC}"
 	@echo "  make jupyter            Run Jupyter notebook"
@@ -109,16 +111,28 @@ train:
 .PHONY: build-docker
 build-docker:
 	@echo "${YELLOW}Building Docker image...${NC}"
-	@docker build -t echo-prime .
+	@docker build -t echoprime .
 	@echo "${GREEN}Docker image built successfully!${NC}"
+
+.PHONY: build-jupyter
+build-jupyter:
+	@echo "${YELLOW}Building Docker image for Jupyter...${NC}"
+	@docker build -t echoprime-jupyter -f Dockerfile.jupyter .
+	@echo "${GREEN}Jupyter Docker image built successfully!${NC}"
 
 .PHONY: run-docker
 run-docker:
 	@echo "${YELLOW}Running Docker container...${NC}"
-	@docker run -d --name echoprime-container --gpus all -p $(JUPYTER_PORT):8888 echo-prime
+	@docker run -d --name echoprime-container --gpus all -p $(JUPYTER_PORT):8888 echoprime
 	@echo "${GREEN}Docker container started!${NC}"
 	@echo "You can access Jupyter notebook at http://localhost:$(JUPYTER_PORT)"
 	@echo "To attach to the container: docker exec -it echoprime-container /bin/bash"
+
+.PHONY: run-jupyter
+run-jupyter:
+	@echo "${YELLOW}Running Jupyter Docker container...${NC}"
+	@docker run -it --rm --gpus all -p $(JUPYTER_PORT):8888 -v $(PWD):/workspace echoprime-jupyter
+	@echo "${GREEN}Jupyter Docker container started!${NC}"
 
 # Utility commands
 .PHONY: clean

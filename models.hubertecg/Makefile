@@ -37,7 +37,9 @@ help:
 	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
+	@echo "  make build-docker       Build the Docker image"
 	@echo "  make build-jupyter      Build the Docker image for Jupyter"
+	@echo "  make run-docker         Run Docker container"
 	@echo "  make run-jupyter        Run Jupyter in a Docker container"
 	@echo ""
 	@echo "${GREEN}Utility Commands:${NC}"
@@ -120,15 +122,31 @@ jupyter:
 	@$(POETRY) run python run_jupyter.py --port $(JUPYTER_PORT)
 
 # Docker commands
+.PHONY: build-docker
+build-docker:
+	@echo "${YELLOW}Building Docker image...${NC}"
+	@docker build -t hubertecg .
+	@echo "${GREEN}Docker image built successfully!${NC}"
+
 .PHONY: build-jupyter
 build-jupyter:
 	@echo "${YELLOW}Building Docker image for Jupyter...${NC}"
-	@docker build -t hubert-ecg-jupyter:latest -f Dockerfile.jupyter .
+	@docker build -t hubertecg-jupyter -f Dockerfile.jupyter .
+	@echo "${GREEN}Jupyter Docker image built successfully!${NC}"
+
+.PHONY: run-docker
+run-docker:
+	@echo "${YELLOW}Running Docker container...${NC}"
+	@docker run -d --name hubertecg-container -p $(JUPYTER_PORT):8888 hubertecg
+	@echo "${GREEN}Docker container started!${NC}"
+	@echo "You can access Jupyter notebook at http://localhost:$(JUPYTER_PORT)"
+	@echo "To attach to the container: docker exec -it hubertecg-container /bin/bash"
 
 .PHONY: run-jupyter
 run-jupyter:
-	@echo "${YELLOW}Running Jupyter container on port $(JUPYTER_PORT)...${NC}"
-	@docker run -it --rm -p $(JUPYTER_PORT):8888 -v $(PWD):/workspace hubert-ecg-jupyter:latest
+	@echo "${YELLOW}Running Jupyter Docker container...${NC}"
+	@docker run -it --rm -p $(JUPYTER_PORT):8888 -v $(PWD):/workspace hubertecg-jupyter
+	@echo "${GREEN}Jupyter Docker container started!${NC}"
 
 # Utility commands
 .PHONY: clean
