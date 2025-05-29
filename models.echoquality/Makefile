@@ -31,7 +31,7 @@ help:
 	@echo "  make visualize          Create comprehensive result visualizations"
 	@echo ""
 	@echo "${GREEN}Training Commands:${NC}"
-	@echo "  make prepare-data       Prepare training sets using inference results"
+	@echo "  make training-data       Prepare training sets using inference results"
 	@echo "  make train              Run model training on training_data/ directory"
 	@echo ""
 	@echo "${GREEN}Docker Commands:${NC}"
@@ -110,8 +110,8 @@ jupyter:
 	@echo "${YELLOW}Starting Jupyter notebook on port $(JUPYTER_PORT)${NC}"
 	@$(POETRY) run python run_jupyter.py --port $(JUPYTER_PORT)
 
-.PHONY: prepare-data
-prepare-data:
+.PHONY: training-data
+training-data:
 	@echo "${YELLOW}Preparing training data from inference results...${NC}"
 	@$(POETRY) run python scripts/prepare_training_data.py
 	@echo "${GREEN}Training data preparation complete!${NC}"

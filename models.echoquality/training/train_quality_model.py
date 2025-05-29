@@ -30,7 +30,7 @@ WEIGHT_DECAY = 1e-5
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ANNOTATIONS_CSV = "training_data/echo_annotations.csv"  # Path to your CSV annotations
 VIDEOS_DIR = "echo_videos"  # Directory containing your 100 echo videos
-MODEL_WEIGHTS = "../models.echoprime/weights/video_quality_model.pt"  # Path to your current model weights
+MODEL_WEIGHTS = "./weights/video_quality_model.pt"  # Path to your current model weights
 SAVE_DIR = "trained_models"  # Directory to save trained models
 NUM_UNFROZEN_LAYERS = 2  # Number of layers to unfreeze for fine-tuning
 
