@@ -32,7 +32,7 @@ sns.set_palette("husl")
 class HuBERTFeatureAnalyzer:
     """Comprehensive analyzer for HuBERT-ECG features."""
     
-    def __init__(self, results_dir='results', output_dir='analysis_output'):
+    def __init__(self, results_dir='results', output_dir='results/visualization_output/analysis_output'):
         self.results_dir = results_dir
         self.output_dir = output_dir
         self.features_data = {}
@@ -533,8 +533,8 @@ def main():
     parser = argparse.ArgumentParser(description='Analyze HuBERT-ECG inference results')
     parser.add_argument('--results_dir', type=str, default='results',
                         help='Directory containing inference results (default: results)')
-    parser.add_argument('--output_dir', type=str, default='analysis_output',
-                        help='Directory to save analysis results (default: analysis_output)')
+    parser.add_argument('--output_dir', type=str, default='results/visualization_output/analysis_output',
+                        help='Directory to save analysis results (default: results/visualization_output/analysis_output)')
     
     args = parser.parse_args()
     

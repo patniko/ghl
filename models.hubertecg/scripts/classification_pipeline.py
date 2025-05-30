@@ -36,7 +36,7 @@ sns.set_palette("husl")
 class HuBERTClassificationPipeline:
     """Classification pipeline for HuBERT-ECG features."""
     
-    def __init__(self, results_dir='results', output_dir='classification_output'):
+    def __init__(self, results_dir='results', output_dir='results/visualization_output/classification_output'):
         self.results_dir = results_dir
         self.output_dir = output_dir
         self.features_data = {}
@@ -581,8 +581,8 @@ def main():
                         help='CSV file containing labels (default: None, creates synthetic labels)')
     parser.add_argument('--target_column', type=str, default='diagnosis',
                         help='Target column name in labels file (default: diagnosis)')
-    parser.add_argument('--output_dir', type=str, default='classification_output',
-                        help='Directory to save classification results (default: classification_output)')
+    parser.add_argument('--output_dir', type=str, default='results/visualization_output/classification_output',
+                        help='Directory to save classification results (default: results/visualization_output/classification_output)')
     
     args = parser.parse_args()
     

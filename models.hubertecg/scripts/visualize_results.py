@@ -23,6 +23,14 @@ from plotly.subplots import make_subplots
 import warnings
 warnings.filterwarnings('ignore')
 
+# Import the analyzer for generating analysis output
+try:
+    from analyze_features import HuBERTFeatureAnalyzer
+except ImportError:
+    # If running from different directory, try relative import
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from analyze_features import HuBERTFeatureAnalyzer
+
 # Set style for better plots
 plt.style.use('seaborn-v0_8')
 sns.set_palette("husl")
@@ -31,7 +39,7 @@ sns.set_palette("husl")
 class HuBERTFeatureVisualizer:
     """Comprehensive visualizer for HuBERT-ECG features."""
     
-    def __init__(self, results_dir='results', output_dir='visualization_output'):
+    def __init__(self, results_dir='results', output_dir='results/visualization_output'):
         self.results_dir = results_dir
         self.output_dir = output_dir
         self.features_data = {}
@@ -686,6 +694,34 @@ class HuBERTFeatureVisualizer:
         plt.close()
         print(f"Summary dashboard saved to: {dashboard_path}")
     
+    def generate_analysis_output(self):
+        """Generate comprehensive analysis output using the HuBERTFeatureAnalyzer."""
+        print("\nGenerating comprehensive analysis output...")
+        print("="*60)
+        
+        try:
+            # Create analysis output directory
+            analysis_output_dir = os.path.join(self.output_dir, 'analysis_output')
+            
+            # Initialize the analyzer with the same results directory and analysis output path
+            analyzer = HuBERTFeatureAnalyzer(
+                results_dir=self.results_dir,
+                output_dir=analysis_output_dir
+            )
+            
+            # Run the complete analysis
+            analysis_results = analyzer.run_complete_analysis()
+            
+            print("\nAnalysis output generation complete!")
+            print(f"Analysis files saved to: {os.path.abspath(analysis_output_dir)}")
+            
+            return analysis_results
+            
+        except Exception as e:
+            print(f"Error generating analysis output: {e}")
+            print("Continuing with visualization only...")
+            return None
+    
     def run_complete_visualization(self):
         """Run the complete visualization pipeline."""
         print("Starting comprehensive HuBERT-ECG feature visualization...")
@@ -703,20 +739,27 @@ class HuBERTFeatureVisualizer:
             self.create_interactive_plots()
             self.create_summary_dashboard()
             
+            # Generate comprehensive analysis output
+            analysis_results = self.generate_analysis_output()
+            
             print("\n" + "="*60)
-            print("Visualization complete! Check the output directory for results:")
+            print("Visualization and Analysis complete! Check the output directory for results:")
             print(f"  {os.path.abspath(self.output_dir)}")
             
-            # List generated files
+            # List generated files recursively
             generated_files = []
-            for file in os.listdir(self.output_dir):
-                if file.endswith(('.png', '.html', '.csv')):
-                    generated_files.append(file)
+            for root, dirs, files in os.walk(self.output_dir):
+                for file in files:
+                    if file.endswith(('.png', '.html', '.csv', '.txt')):
+                        rel_path = os.path.relpath(os.path.join(root, file), self.output_dir)
+                        generated_files.append(rel_path)
             
             if generated_files:
                 print("\nGenerated files:")
                 for file in sorted(generated_files):
                     print(f"  - {file}")
+            
+            return analysis_results
             
         except Exception as e:
             print(f"Error during visualization: {e}")
@@ -727,8 +770,8 @@ def main():
     parser = argparse.ArgumentParser(description='Visualize HuBERT-ECG inference results')
     parser.add_argument('--results_dir', type=str, default='results',
                         help='Directory containing inference results (default: results)')
-    parser.add_argument('--output_dir', type=str, default='visualization_output',
-                        help='Directory to save visualization results (default: visualization_output)')
+    parser.add_argument('--output_dir', type=str, default='results/visualization_output',
+                        help='Directory to save visualization results (default: results/visualization_output)')
     
     args = parser.parse_args()
     
