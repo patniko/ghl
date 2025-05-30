@@ -639,52 +639,68 @@ class EchoPrimeVisualizer:
         print(f"Summary report saved to: {report_path}")
     
     def create_device_analytics(self):
-        """Create per-device analytics visualizations."""
+        """Create comprehensive per-device analytics visualizations."""
         print("Creating device analytics...")
         
         if not self.device_data:
             print("No device data available for analytics")
             return
         
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle('Per-Device Analytics Dashboard', fontsize=16)
+        # Create comprehensive device analytics with multiple subplots
+        fig, axes = plt.subplots(3, 2, figsize=(16, 18))
+        fig.suptitle('Comprehensive Per-Device Analytics Dashboard', fontsize=16)
         
-        # 1. Processing success rate by device
         device_names = list(self.device_data.keys())
         device_success_rates = []
         device_error_rates = []
         device_video_counts = []
+        device_mean_ef = []
+        device_file_counts = []
+        device_processing_rates = []
         
+        # Calculate comprehensive device statistics
         for device in device_names:
             device_metrics = self.device_data[device]
+            
+            # Processing metrics
             success_rates = [m['processing_success_rate'] * 100 for m in device_metrics]
             error_rates = [m['error_rate'] * 100 for m in device_metrics]
             video_counts = [m['num_videos'] for m in device_metrics]
+            file_counts = [m['num_files'] for m in device_metrics]
+            
+            # Cardiac metrics
+            ef_values = [m['ejection_fraction'] for m in device_metrics if m['ejection_fraction'] > 0]
             
             device_success_rates.append(np.mean(success_rates) if success_rates else 0)
             device_error_rates.append(np.mean(error_rates) if error_rates else 0)
             device_video_counts.append(np.sum(video_counts) if video_counts else 0)
+            device_file_counts.append(np.sum(file_counts) if file_counts else 0)
+            device_mean_ef.append(np.mean(ef_values) if ef_values else 0)
+            
+            # Processing efficiency
+            total_processed = sum(m['num_processed'] for m in device_metrics)
+            total_files = sum(m['num_files'] for m in device_metrics)
+            processing_rate = (total_processed / total_files * 100) if total_files > 0 else 0
+            device_processing_rates.append(processing_rate)
         
-        # Plot 1: Success rates by device
+        # Plot 1: Processing success rates by device
         bars = axes[0, 0].bar(device_names, device_success_rates, color='lightgreen', alpha=0.7)
-        axes[0, 0].set_title('Average Processing Success Rate by Device')
+        axes[0, 0].set_title('Processing Success Rate by Device')
         axes[0, 0].set_ylabel('Success Rate (%)')
         axes[0, 0].tick_params(axis='x', rotation=45)
         axes[0, 0].grid(True, alpha=0.3)
         
-        # Add value labels
         for bar, rate in zip(bars, device_success_rates):
             axes[0, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
                            f'{rate:.1f}%', ha='center', va='bottom', fontsize=10)
         
         # Plot 2: Error rates by device
         bars = axes[0, 1].bar(device_names, device_error_rates, color='lightcoral', alpha=0.7)
-        axes[0, 1].set_title('Average Error Rate by Device')
+        axes[0, 1].set_title('Error Rate by Device')
         axes[0, 1].set_ylabel('Error Rate (%)')
         axes[0, 1].tick_params(axis='x', rotation=45)
         axes[0, 1].grid(True, alpha=0.3)
         
-        # Add value labels
         for bar, rate in zip(bars, device_error_rates):
             axes[0, 1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(device_error_rates)*0.01,
                            f'{rate:.1f}%', ha='center', va='bottom', fontsize=10)
@@ -696,12 +712,36 @@ class EchoPrimeVisualizer:
         axes[1, 0].tick_params(axis='x', rotation=45)
         axes[1, 0].grid(True, alpha=0.3)
         
-        # Add value labels
         for bar, count in zip(bars, device_video_counts):
             axes[1, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(device_video_counts)*0.01,
                            str(count), ha='center', va='bottom', fontsize=10)
         
-        # Plot 4: Device performance comparison (EF distribution)
+        # Plot 4: Total files processed by device
+        bars = axes[1, 1].bar(device_names, device_file_counts, color='orange', alpha=0.7)
+        axes[1, 1].set_title('Total Files Processed by Device')
+        axes[1, 1].set_ylabel('Number of Files')
+        axes[1, 1].tick_params(axis='x', rotation=45)
+        axes[1, 1].grid(True, alpha=0.3)
+        
+        for bar, count in zip(bars, device_file_counts):
+            axes[1, 1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(device_file_counts)*0.01,
+                           str(count), ha='center', va='bottom', fontsize=10)
+        
+        # Plot 5: Mean Ejection Fraction by device
+        bars = axes[2, 0].bar(device_names, device_mean_ef, color='lightpink', alpha=0.7)
+        axes[2, 0].set_title('Mean Ejection Fraction by Device')
+        axes[2, 0].set_ylabel('Mean EF (%)')
+        axes[2, 0].tick_params(axis='x', rotation=45)
+        axes[2, 0].grid(True, alpha=0.3)
+        axes[2, 0].axhline(y=50, color='red', linestyle='--', alpha=0.7, label='Normal Threshold')
+        axes[2, 0].legend()
+        
+        for bar, ef in zip(bars, device_mean_ef):
+            if ef > 0:
+                axes[2, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                               f'{ef:.1f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Plot 6: EF distribution by device (box plot)
         ef_by_device = {}
         for device in device_names:
             device_metrics = self.device_data[device]
@@ -710,27 +750,172 @@ class EchoPrimeVisualizer:
                 ef_by_device[device] = ef_values
         
         if ef_by_device:
-            # Create box plot for EF by device
             ef_data = [ef_by_device[device] for device in ef_by_device.keys()]
             ef_labels = list(ef_by_device.keys())
             
-            axes[1, 1].boxplot(ef_data, labels=ef_labels)
-            axes[1, 1].set_title('Ejection Fraction Distribution by Device')
-            axes[1, 1].set_ylabel('Ejection Fraction (%)')
-            axes[1, 1].tick_params(axis='x', rotation=45)
-            axes[1, 1].grid(True, alpha=0.3)
-            axes[1, 1].axhline(y=50, color='red', linestyle='--', alpha=0.7, label='Normal Threshold')
-            axes[1, 1].legend()
+            axes[2, 1].boxplot(ef_data, labels=ef_labels)
+            axes[2, 1].set_title('EF Distribution by Device')
+            axes[2, 1].set_ylabel('Ejection Fraction (%)')
+            axes[2, 1].tick_params(axis='x', rotation=45)
+            axes[2, 1].grid(True, alpha=0.3)
+            axes[2, 1].axhline(y=50, color='red', linestyle='--', alpha=0.7, label='Normal Threshold')
+            axes[2, 1].legend()
         else:
-            axes[1, 1].text(0.5, 0.5, 'No EF data available by device', ha='center', va='center',
-                           transform=axes[1, 1].transAxes)
-            axes[1, 1].set_title('Ejection Fraction Distribution by Device')
+            axes[2, 1].text(0.5, 0.5, 'No EF data available by device', ha='center', va='center',
+                           transform=axes[2, 1].transAxes)
+            axes[2, 1].set_title('EF Distribution by Device')
         
         plt.tight_layout()
         device_analytics_path = os.path.join(self.output_dir, 'device_analytics.png')
         plt.savefig(device_analytics_path, dpi=300, bbox_inches='tight')
         plt.close()
         print(f"Device analytics saved to: {device_analytics_path}")
+        
+        # Create additional device-specific cardiac metrics analysis
+        self.create_device_cardiac_metrics_analysis()
+    
+    def create_device_cardiac_metrics_analysis(self):
+        """Create detailed device-specific cardiac metrics analysis."""
+        print("Creating device-specific cardiac metrics analysis...")
+        
+        if not self.device_data:
+            return
+        
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        fig.suptitle('Device-Specific Cardiac Metrics Analysis', fontsize=16)
+        
+        device_names = list(self.device_data.keys())
+        
+        # 1. Cardiac conditions prevalence by device
+        condition_by_device = {}
+        key_conditions = ['mitral_regurgitation', 'aortic_stenosis', 'left_atrium_dilation', 'pacemaker']
+        
+        for condition in key_conditions:
+            condition_by_device[condition] = []
+            for device in device_names:
+                device_metrics = self.device_data[device]
+                count = sum(1 for m in device_metrics if m.get(condition, 0) > 0)
+                total = len(device_metrics)
+                prevalence = (count / total * 100) if total > 0 else 0
+                condition_by_device[condition].append(prevalence)
+        
+        # Plot condition prevalence
+        x = np.arange(len(device_names))
+        width = 0.2
+        colors = ['red', 'blue', 'green', 'orange']
+        
+        for i, (condition, prevalences) in enumerate(condition_by_device.items()):
+            axes[0, 0].bar(x + i*width, prevalences, width, 
+                          label=condition.replace('_', ' ').title(), 
+                          color=colors[i], alpha=0.7)
+        
+        axes[0, 0].set_title('Cardiac Conditions Prevalence by Device')
+        axes[0, 0].set_ylabel('Prevalence (%)')
+        axes[0, 0].set_xlabel('Device')
+        axes[0, 0].set_xticks(x + width * 1.5)
+        axes[0, 0].set_xticklabels(device_names, rotation=45)
+        axes[0, 0].legend()
+        axes[0, 0].grid(True, alpha=0.3)
+        
+        # 2. EF statistics by device
+        device_ef_stats = []
+        for device in device_names:
+            device_metrics = self.device_data[device]
+            ef_values = [m['ejection_fraction'] for m in device_metrics if m['ejection_fraction'] > 0]
+            if ef_values:
+                device_ef_stats.append({
+                    'device': device,
+                    'mean': np.mean(ef_values),
+                    'median': np.median(ef_values),
+                    'std': np.std(ef_values),
+                    'count': len(ef_values)
+                })
+        
+        if device_ef_stats:
+            devices = [stat['device'] for stat in device_ef_stats]
+            means = [stat['mean'] for stat in device_ef_stats]
+            stds = [stat['std'] for stat in device_ef_stats]
+            
+            axes[0, 1].bar(devices, means, yerr=stds, capsize=5, 
+                          color='lightcoral', alpha=0.7, error_kw={'elinewidth': 2})
+            axes[0, 1].set_title('Mean EF by Device (with Std Dev)')
+            axes[0, 1].set_ylabel('Ejection Fraction (%)')
+            axes[0, 1].tick_params(axis='x', rotation=45)
+            axes[0, 1].axhline(y=50, color='red', linestyle='--', alpha=0.7, label='Normal Threshold')
+            axes[0, 1].legend()
+            axes[0, 1].grid(True, alpha=0.3)
+        
+        # 3. Processing efficiency vs cardiac metrics
+        device_processing_eff = []
+        device_normal_ef_rate = []
+        
+        for device in device_names:
+            device_metrics = self.device_data[device]
+            
+            # Processing efficiency
+            total_processed = sum(m['num_processed'] for m in device_metrics)
+            total_files = sum(m['num_files'] for m in device_metrics)
+            eff = (total_processed / total_files * 100) if total_files > 0 else 0
+            device_processing_eff.append(eff)
+            
+            # Normal EF rate
+            ef_values = [m['ejection_fraction'] for m in device_metrics if m['ejection_fraction'] > 0]
+            normal_ef_count = sum(1 for ef in ef_values if ef >= 50)
+            normal_ef_rate = (normal_ef_count / len(ef_values) * 100) if ef_values else 0
+            device_normal_ef_rate.append(normal_ef_rate)
+        
+        if device_processing_eff and device_normal_ef_rate:
+            axes[1, 0].scatter(device_processing_eff, device_normal_ef_rate, 
+                             s=100, alpha=0.7, c='purple')
+            
+            # Add device labels
+            for i, device in enumerate(device_names):
+                axes[1, 0].annotate(device, 
+                                   (device_processing_eff[i], device_normal_ef_rate[i]),
+                                   xytext=(5, 5), textcoords='offset points', fontsize=8)
+            
+            axes[1, 0].set_xlabel('Processing Efficiency (%)')
+            axes[1, 0].set_ylabel('Normal EF Rate (%)')
+            axes[1, 0].set_title('Processing Efficiency vs Normal EF Rate')
+            axes[1, 0].grid(True, alpha=0.3)
+            
+            # Add correlation
+            if len(device_processing_eff) > 1:
+                corr = np.corrcoef(device_processing_eff, device_normal_ef_rate)[0, 1]
+                axes[1, 0].text(0.05, 0.95, f'Correlation: {corr:.3f}', 
+                               transform=axes[1, 0].transAxes, 
+                               bbox=dict(boxstyle="round", facecolor='white', alpha=0.8))
+        
+        # 4. Device performance summary table
+        axes[1, 1].axis('off')
+        
+        if device_ef_stats:
+            table_data = []
+            for stat in device_ef_stats:
+                device_metrics = self.device_data[stat['device']]
+                total_videos = sum(m['num_videos'] for m in device_metrics)
+                
+                table_data.append([
+                    stat['device'][:10],  # Truncate device name
+                    f"{stat['mean']:.1f}%",
+                    f"{stat['count']}",
+                    f"{total_videos}"
+                ])
+            
+            table = axes[1, 1].table(cellText=table_data,
+                                   colLabels=['Device', 'Mean EF', 'EF Cases', 'Videos'],
+                                   cellLoc='center',
+                                   loc='center')
+            table.auto_set_font_size(False)
+            table.set_fontsize(10)
+            table.scale(1, 2)
+            axes[1, 1].set_title('Device Performance Summary', fontsize=14, pad=20)
+        
+        plt.tight_layout()
+        device_cardiac_path = os.path.join(self.output_dir, 'device_cardiac_metrics.png')
+        plt.savefig(device_cardiac_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Device cardiac metrics analysis saved to: {device_cardiac_path}")
     
     def create_batch_quality_assessment(self):
         """Create enhanced batch quality assessment visualizations."""
