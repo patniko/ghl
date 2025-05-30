@@ -27,6 +27,7 @@ help:
 	@echo "  make inference          Run complete inference pipeline (clean + convert + infer)"
 	@echo "  make dicom-prep         Convert DICOM ECG files to NPY format"
 	@echo "  make alivecor-prep      Convert AliveCor JSON ECG files to NPY format"
+	@echo "  make ecg-analysis       Analyze ECG signals and extract clinical parameters"
 	@echo "  make visualize          Create comprehensive result visualizations"
 	@echo ""
 	@echo "${GREEN}Training Commands:${NC}"
@@ -90,6 +91,8 @@ inference:
 	@$(POETRY) run python preprocessors/alivecor_to_npy.py --input_dir ./raw_data --output_dir ./preprocessed_data
 	@echo "${YELLOW}Running HuBERT-ECG inference on converted files...${NC}"
 	@$(POETRY) run python scripts/run_dicom_inference.py --input_dir ./preprocessed_data --output_dir ./results
+	@echo "${YELLOW}Analyzing ECG signals and extracting clinical parameters...${NC}"
+	@$(POETRY) run python scripts/analyze_ecg_signals.py --input_dir ./raw_data --output_dir ./results
 	@echo "${GREEN}Inference complete! Results saved to ./results${NC}"
 
 .PHONY: dicom-metadata
@@ -103,6 +106,12 @@ dicom-visualize:
 	@echo "${YELLOW}Creating ECG signal visualizations...${NC}"
 	@$(POETRY) run python scripts/visualize_ecg_signals.py
 	@echo "${GREEN}ECG visualization complete!${NC}"
+
+.PHONY: ecg-analysis
+ecg-analysis:
+	@echo "${YELLOW}Analyzing ECG signals and extracting clinical parameters...${NC}"
+	@$(POETRY) run python scripts/analyze_ecg_signals.py --input_dir ./raw_data --output_dir ./results
+	@echo "${GREEN}ECG analysis complete! Results saved to ./results${NC}"
 
 .PHONY: visualize
 visualize:

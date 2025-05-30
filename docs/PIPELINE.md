@@ -299,7 +299,7 @@ The following table outlines the required columns, data types, validation rules,
 | **Questionnaire Identifier** | String | Alphanumeric | Unique identifier for each questionnaire | Yes |
 | **Age** | Integer | 30-99 | Whole numbers within valid range | Yes |
 | **Biological Sex** | String | Predefined values | One of: Female, Male, Other | Yes |
-| **Location** | String | Predefined values | One of: Urban-LCECU Hospital, CHAD Hospital, CMC Cardiology | Yes |
+| **Location** | String | Predefined values | One of: Hospital, Hospital, Cardiology | Yes |
 | **Setting** | String | Predefined values | One of: Outpatient, Inpatient | Yes |
 | **Smoking Years** | Integer | 0-99 | Whole numbers within valid range | No |
 | **Daily Tobacco** | Integer | 0-50 | Whole numbers within valid range | No |
@@ -884,21 +884,3 @@ The DINO model incorporates patient metadata to enhance diagnostic capabilities:
 **Source Code**
 
 [https://github.com/patniko/models.dino](https://github.com/patniko/models.dino)
-
-## Open Items
-- ⏳ Get CMC samples for Echo and ECG devices
-- ✅ Get AliveCor API access to timeseries data
-- ⏳ Get Eko API access to timeseries data
-- ⏳ Resolve how to timeshift align ECG + Echo signals
-- ⏸️ Parse all echo PDF formats or get structured data access
-- ⏸️ Parse all 12L PDF formats or get structured timeseries data access
-- ⏸️ Collate high quality sample data sets
-- ⏸️ Generate low quality sample data sets
-- ⏳ Validate all echo devices can be pre-processed and asessed for quality
-- ⏸️ Complete small training run on DINO
-- ❓ Figure out where/if we need to parse clinical notes directly
-- ❓ Check with CMC to see if tabular checks can be run before de-id
-- ❓ Normalize smoking years to pack years
-- ❓ See if we can track unfiltered vs. filtered smoking years
-- ❓ Add chewable tobacco to the list of questions. Not always smoking.
-- ❓ Alcohol consumption is number of drinks per day

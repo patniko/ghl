@@ -232,31 +232,45 @@ def process_alivecor_patients(data_dir, output_dir, data_type='enhanced', target
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     
-    # Look specifically for PATIENT-ALIVECOR directory
-    alivecor_dir = os.path.join(data_dir, 'PATIENT-ALIVECOR')
+    # Find all directories that start with 'PATIENT-ALIVECOR'
+    alivecor_dirs = []
+    for item in os.listdir(data_dir):
+        item_path = os.path.join(data_dir, item)
+        if os.path.isdir(item_path) and item.startswith('PATIENT-ALIVECOR'):
+            alivecor_dirs.append(item_path)
     
-    if not os.path.exists(alivecor_dir):
-        print(f"AliveCor directory not found: {alivecor_dir}")
+    if not alivecor_dirs:
+        print(f"No AliveCor directories found in: {data_dir}")
+        print(f"Looking for directories starting with 'PATIENT-ALIVECOR'")
         return
     
-    if not os.path.isdir(alivecor_dir):
-        print(f"AliveCor path is not a directory: {alivecor_dir}")
-        return
+    # Sort directories for consistent processing order
+    alivecor_dirs.sort()
     
-    print(f"Processing AliveCor directory: {alivecor_dir}")
+    print(f"Found {len(alivecor_dirs)} AliveCor directories:")
+    for dir_path in alivecor_dirs:
+        print(f"  - {os.path.basename(dir_path)}")
     
-    # Process the AliveCor patient folder
-    successful = process_alivecor_folder(alivecor_dir, output_dir, data_type, target_length)
+    total_successful = 0
+    total_files = 0
     
-    # Count total files
-    total_files = len([f for f in os.listdir(alivecor_dir) if f.lower().endswith('.json')])
+    # Process each AliveCor patient folder
+    for alivecor_dir in alivecor_dirs:
+        successful = process_alivecor_folder(alivecor_dir, output_dir, data_type, target_length)
+        
+        # Count files in this directory
+        dir_files = len([f for f in os.listdir(alivecor_dir) if f.lower().endswith('.json')])
+        
+        total_successful += successful
+        total_files += dir_files
     
     print(f"\n=== ALIVECOR CONVERSION SUMMARY ===")
     print(f"Data type used: {data_type}")
     print(f"Target sample length: {target_length}")
+    print(f"Directories processed: {len(alivecor_dirs)}")
     print(f"Total JSON files: {total_files}")
-    print(f"Successfully converted: {successful}")
-    print(f"Success rate: {successful/total_files*100:.1f}%" if total_files > 0 else "No files to process")
+    print(f"Successfully converted: {total_successful}")
+    print(f"Success rate: {total_successful/total_files*100:.1f}%" if total_files > 0 else "No files to process")
 
 
 def main():

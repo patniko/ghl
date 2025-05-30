@@ -574,9 +574,12 @@ class HuBERTFeatureVisualizer:
         ax1.axis('off')
         ax1.set_title('Feature Statistics Summary', fontsize=14, pad=20)
         
-        # 2. Mini heatmaps (top-right)
-        for i, (patient, data) in enumerate(self.features_data.items()):
-            ax = fig.add_subplot(gs[0, 2+i] if i < 2 else gs[1, i-2])
+        # 2. Mini heatmaps (top-right) - limit to 4 patients max
+        for i, (patient, data) in enumerate(list(self.features_data.items())[:4]):
+            if i < 2:
+                ax = fig.add_subplot(gs[0, 2+i])
+            else:
+                ax = fig.add_subplot(gs[1, i-2])
             
             features = data['features']
             if features.ndim == 3 and features.shape[0] == 1:
