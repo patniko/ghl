@@ -30,7 +30,7 @@ sns.set_palette("husl")
 
 
 class EchoQualityVisualizer:
-    """Comprehensive visualizer for EchoQuality inference results."""
+    """Comprehensive visualizer for EchoQuality inference results with device analytics."""
     
     def __init__(self, results_dir='results/inference_output', output_dir='visualization_output'):
         self.results_dir = results_dir
@@ -38,9 +38,18 @@ class EchoQualityVisualizer:
         self.summary_data = None
         self.folder_data = []
         self.all_results = []
+        self.device_data = {}
         
         # Create output directory
         os.makedirs(output_dir, exist_ok=True)
+        
+    def extract_device_info(self, folder_name):
+        """Extract device information from folder name."""
+        # Try to extract device info from folder name (format: device-model-id)
+        parts = folder_name.split('-')
+        if len(parts) >= 2:
+            return parts[0]  # Return device name
+        return folder_name  # Return full folder name if no clear device pattern
         
     def load_data(self):
         """Load summary and individual folder results."""
@@ -57,10 +66,14 @@ class EchoQualityVisualizer:
         print(f"Found {self.summary_data['total_folders']} folders with {self.summary_data['total_files']} total files")
         print(f"Overall pass rate: {self.summary_data['overall_pass_rate']:.2f}%")
         
-        # Load individual folder data
+        # Load individual folder data with device information
         for folder_result in self.summary_data['folder_results']:
             folder_name = folder_result['folder']
             folder_path = os.path.join(self.results_dir, folder_name)
+            
+            # Extract device information
+            device_name = self.extract_device_info(folder_name)
+            folder_result['device_name'] = device_name
             
             # Load detailed results if available
             results_file = os.path.join(folder_path, 'inference_results.json')
@@ -76,6 +89,7 @@ class EchoQualityVisualizer:
                 for file_id, result in folder_result['results'].items():
                     result_entry = {
                         'folder': folder_name,
+                        'device_name': device_name,
                         'file_id': file_id,
                         'score': result['score'],
                         'status': result['status'],
@@ -83,6 +97,11 @@ class EchoQualityVisualizer:
                         'path': result['path']
                     }
                     self.all_results.append(result_entry)
+                    
+                    # Group by device
+                    if device_name not in self.device_data:
+                        self.device_data[device_name] = []
+                    self.device_data[device_name].append(result_entry)
         
         print(f"Loaded detailed results for {len(self.folder_data)} folders")
         print(f"Total individual results: {len(self.all_results)}")
@@ -630,6 +649,148 @@ class EchoQualityVisualizer:
         
         print(f"Summary report saved to: {report_path}")
     
+    def create_device_analytics(self):
+        """Create per-device analytics visualizations."""
+        print("Creating device analytics...")
+        
+        if not self.device_data:
+            print("No device data available for analytics")
+            return
+        
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        fig.suptitle('Per-Device Quality Analytics Dashboard', fontsize=16)
+        
+        # Calculate device statistics
+        device_names = list(self.device_data.keys())
+        device_pass_rates = []
+        device_mean_scores = []
+        device_file_counts = []
+        
+        for device in device_names:
+            device_results = self.device_data[device]
+            pass_count = sum(1 for r in device_results if r['status'] == 'PASS')
+            total_count = len(device_results)
+            
+            pass_rate = (pass_count / total_count * 100) if total_count > 0 else 0
+            mean_score = np.mean([r['score'] for r in device_results]) if device_results else 0
+            
+            device_pass_rates.append(pass_rate)
+            device_mean_scores.append(mean_score)
+            device_file_counts.append(total_count)
+        
+        # Plot 1: Pass rates by device
+        bars = axes[0, 0].bar(device_names, device_pass_rates, color='lightgreen', alpha=0.7)
+        axes[0, 0].set_title('Pass Rate by Device')
+        axes[0, 0].set_ylabel('Pass Rate (%)')
+        axes[0, 0].tick_params(axis='x', rotation=45)
+        axes[0, 0].grid(True, alpha=0.3)
+        
+        # Add value labels
+        for bar, rate in zip(bars, device_pass_rates):
+            axes[0, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                           f'{rate:.1f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Plot 2: Mean quality scores by device
+        bars = axes[0, 1].bar(device_names, device_mean_scores, color='skyblue', alpha=0.7)
+        axes[0, 1].set_title('Mean Quality Score by Device')
+        axes[0, 1].set_ylabel('Mean Quality Score')
+        axes[0, 1].tick_params(axis='x', rotation=45)
+        axes[0, 1].grid(True, alpha=0.3)
+        axes[0, 1].axhline(y=0.5, color='red', linestyle='--', alpha=0.7, label='Pass Threshold')
+        axes[0, 1].legend()
+        
+        # Add value labels
+        for bar, score in zip(bars, device_mean_scores):
+            axes[0, 1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+                           f'{score:.3f}', ha='center', va='bottom', fontsize=10)
+        
+        # Plot 3: File counts by device
+        bars = axes[1, 0].bar(device_names, device_file_counts, color='orange', alpha=0.7)
+        axes[1, 0].set_title('Total Files Processed by Device')
+        axes[1, 0].set_ylabel('Number of Files')
+        axes[1, 0].tick_params(axis='x', rotation=45)
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        # Add value labels
+        for bar, count in zip(bars, device_file_counts):
+            axes[1, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(device_file_counts)*0.01,
+                           str(count), ha='center', va='bottom', fontsize=10)
+        
+        # Plot 4: Score distribution by device (box plot)
+        if len(device_names) > 0:
+            score_data = []
+            labels = []
+            for device in device_names:
+                device_scores = [r['score'] for r in self.device_data[device]]
+                if device_scores:
+                    score_data.append(device_scores)
+                    labels.append(device)
+            
+            if score_data:
+                axes[1, 1].boxplot(score_data, labels=labels)
+                axes[1, 1].set_title('Quality Score Distribution by Device')
+                axes[1, 1].set_ylabel('Quality Score')
+                axes[1, 1].tick_params(axis='x', rotation=45)
+                axes[1, 1].grid(True, alpha=0.3)
+                axes[1, 1].axhline(y=0.5, color='red', linestyle='--', alpha=0.7, label='Pass Threshold')
+                axes[1, 1].legend()
+            else:
+                axes[1, 1].text(0.5, 0.5, 'No score data available', ha='center', va='center',
+                               transform=axes[1, 1].transAxes)
+                axes[1, 1].set_title('Quality Score Distribution by Device')
+        
+        plt.tight_layout()
+        device_analytics_path = os.path.join(self.output_dir, 'device_analytics.png')
+        plt.savefig(device_analytics_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Device analytics saved to: {device_analytics_path}")
+    
+    def create_batch_quality_assessment(self):
+        """Create enhanced batch quality assessment visualizations."""
+        print("Creating batch quality assessment...")
+        
+        # Create a simple batch quality assessment plot
+        fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+        fig.suptitle('Batch Quality Assessment', fontsize=16)
+        
+        # 1. Failure rate distribution
+        folder_fail_rates = []
+        for folder in self.folder_data:
+            if folder['num_processed'] > 0:
+                fail_rate = folder['fail_count'] / folder['num_processed']
+                folder_fail_rates.append(fail_rate)
+        
+        if folder_fail_rates:
+            median_fail_rate = np.median(folder_fail_rates)
+            axes[0].hist(folder_fail_rates, bins=15, alpha=0.7, color='orange', edgecolor='black')
+            axes[0].axvline(x=median_fail_rate, color='red', linestyle='--', 
+                           label=f'Median: {median_fail_rate:.3f}')
+            axes[0].set_title('Failure Rate Distribution')
+            axes[0].set_xlabel('Failure Rate')
+            axes[0].set_ylabel('Frequency')
+            axes[0].legend()
+            axes[0].grid(True, alpha=0.3)
+        
+        # 2. Quality score percentiles
+        scores = [result['score'] for result in self.all_results]
+        if scores:
+            percentiles = [10, 25, 50, 75, 90]
+            percentile_values = [np.percentile(scores, p) for p in percentiles]
+            
+            axes[1].bar(range(len(percentiles)), percentile_values, alpha=0.7, color='lightblue')
+            axes[1].set_title('Quality Score Percentiles')
+            axes[1].set_xlabel('Percentile')
+            axes[1].set_ylabel('Quality Score')
+            axes[1].set_xticks(range(len(percentiles)))
+            axes[1].set_xticklabels([f'{p}th' for p in percentiles])
+            axes[1].grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        batch_quality_path = os.path.join(self.output_dir, 'batch_quality_assessment.png')
+        plt.savefig(batch_quality_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Batch quality assessment saved to: {batch_quality_path}")
+    
     def run_complete_visualization(self):
         """Run the complete visualization pipeline."""
         print("Starting comprehensive EchoQuality visualization...")
@@ -643,6 +804,8 @@ class EchoQualityVisualizer:
             self.create_overall_summary_dashboard()
             self.create_score_analysis_plots()
             self.create_folder_comparison_plots()
+            self.create_device_analytics()
+            self.create_batch_quality_assessment()
             self.create_interactive_plots()
             self.create_summary_report()
             

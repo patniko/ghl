@@ -30,7 +30,7 @@ sns.set_palette("husl")
 
 
 class EchoPrimeVisualizer:
-    """Comprehensive visualizer for EchoPrime inference results."""
+    """Comprehensive visualizer for EchoPrime inference results with device analytics."""
     
     def __init__(self, results_dir='results/inference_output', output_dir='results/visualization_output'):
         self.results_dir = results_dir
@@ -38,6 +38,7 @@ class EchoPrimeVisualizer:
         self.summary_data = None
         self.folder_data = []
         self.all_metrics = []
+        self.device_data = {}
         
         # Create output directory
         os.makedirs(output_dir, exist_ok=True)
@@ -51,6 +52,14 @@ class EchoPrimeVisualizer:
             'tricuspid_stenosis', 'tricuspid_valve_regurgitation', 'pericardial_effusion',
             'aortic_root_dilation', 'dilated_ivc', 'pulmonary_artery_pressure_continuous'
         ]
+        
+    def extract_device_info(self, folder_name):
+        """Extract device information from folder name."""
+        # Try to extract device info from folder name (format: device-model-id)
+        parts = folder_name.split('-')
+        if len(parts) >= 2:
+            return parts[0]  # Return device name
+        return folder_name  # Return full folder name if no clear device pattern
         
     def load_data(self):
         """Load summary and individual folder results."""
@@ -68,17 +77,40 @@ class EchoPrimeVisualizer:
         print(f"Successful folders: {self.summary_data['successful']}")
         print(f"Failed folders: {self.summary_data['failed']}")
         
-        # Process folder results
+        # Process folder results with device information
         for folder_result in self.summary_data['results']:
             if folder_result['status'] == 'success' and 'metrics' in folder_result:
+                # Extract device information from folder name
+                device_name = self.extract_device_info(folder_result['folder'])
+                folder_result['device_name'] = device_name
+                
                 self.folder_data.append(folder_result)
                 
                 # Add folder info to metrics for analysis
                 metrics_with_folder = folder_result['metrics'].copy()
                 metrics_with_folder['folder'] = folder_result['folder']
+                metrics_with_folder['device_name'] = device_name
                 metrics_with_folder['num_videos'] = folder_result['num_videos']
                 metrics_with_folder['num_processed'] = folder_result['num_processed']
+                metrics_with_folder['num_files'] = folder_result['num_files']
+                
+                # Calculate failure metrics
+                if 'error_stats' in folder_result:
+                    total_errors = sum(folder_result['error_stats']['error_counts'].values())
+                    metrics_with_folder['total_errors'] = total_errors
+                    metrics_with_folder['error_rate'] = total_errors / folder_result['num_files'] if folder_result['num_files'] > 0 else 0
+                    metrics_with_folder['processing_success_rate'] = folder_result['num_processed'] / folder_result['num_files'] if folder_result['num_files'] > 0 else 0
+                else:
+                    metrics_with_folder['total_errors'] = 0
+                    metrics_with_folder['error_rate'] = 0
+                    metrics_with_folder['processing_success_rate'] = 1.0
+                
                 self.all_metrics.append(metrics_with_folder)
+                
+                # Group by device
+                if device_name not in self.device_data:
+                    self.device_data[device_name] = []
+                self.device_data[device_name].append(metrics_with_folder)
         
         print(f"Loaded metrics for {len(self.folder_data)} successful folders")
         print(f"Total metric records: {len(self.all_metrics)}")
@@ -606,6 +638,246 @@ class EchoPrimeVisualizer:
         
         print(f"Summary report saved to: {report_path}")
     
+    def create_device_analytics(self):
+        """Create per-device analytics visualizations."""
+        print("Creating device analytics...")
+        
+        if not self.device_data:
+            print("No device data available for analytics")
+            return
+        
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        fig.suptitle('Per-Device Analytics Dashboard', fontsize=16)
+        
+        # 1. Processing success rate by device
+        device_names = list(self.device_data.keys())
+        device_success_rates = []
+        device_error_rates = []
+        device_video_counts = []
+        
+        for device in device_names:
+            device_metrics = self.device_data[device]
+            success_rates = [m['processing_success_rate'] * 100 for m in device_metrics]
+            error_rates = [m['error_rate'] * 100 for m in device_metrics]
+            video_counts = [m['num_videos'] for m in device_metrics]
+            
+            device_success_rates.append(np.mean(success_rates) if success_rates else 0)
+            device_error_rates.append(np.mean(error_rates) if error_rates else 0)
+            device_video_counts.append(np.sum(video_counts) if video_counts else 0)
+        
+        # Plot 1: Success rates by device
+        bars = axes[0, 0].bar(device_names, device_success_rates, color='lightgreen', alpha=0.7)
+        axes[0, 0].set_title('Average Processing Success Rate by Device')
+        axes[0, 0].set_ylabel('Success Rate (%)')
+        axes[0, 0].tick_params(axis='x', rotation=45)
+        axes[0, 0].grid(True, alpha=0.3)
+        
+        # Add value labels
+        for bar, rate in zip(bars, device_success_rates):
+            axes[0, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1,
+                           f'{rate:.1f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Plot 2: Error rates by device
+        bars = axes[0, 1].bar(device_names, device_error_rates, color='lightcoral', alpha=0.7)
+        axes[0, 1].set_title('Average Error Rate by Device')
+        axes[0, 1].set_ylabel('Error Rate (%)')
+        axes[0, 1].tick_params(axis='x', rotation=45)
+        axes[0, 1].grid(True, alpha=0.3)
+        
+        # Add value labels
+        for bar, rate in zip(bars, device_error_rates):
+            axes[0, 1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(device_error_rates)*0.01,
+                           f'{rate:.1f}%', ha='center', va='bottom', fontsize=10)
+        
+        # Plot 3: Total videos processed by device
+        bars = axes[1, 0].bar(device_names, device_video_counts, color='skyblue', alpha=0.7)
+        axes[1, 0].set_title('Total Videos Processed by Device')
+        axes[1, 0].set_ylabel('Number of Videos')
+        axes[1, 0].tick_params(axis='x', rotation=45)
+        axes[1, 0].grid(True, alpha=0.3)
+        
+        # Add value labels
+        for bar, count in zip(bars, device_video_counts):
+            axes[1, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(device_video_counts)*0.01,
+                           str(count), ha='center', va='bottom', fontsize=10)
+        
+        # Plot 4: Device performance comparison (EF distribution)
+        ef_by_device = {}
+        for device in device_names:
+            device_metrics = self.device_data[device]
+            ef_values = [m['ejection_fraction'] for m in device_metrics if m['ejection_fraction'] > 0]
+            if ef_values:
+                ef_by_device[device] = ef_values
+        
+        if ef_by_device:
+            # Create box plot for EF by device
+            ef_data = [ef_by_device[device] for device in ef_by_device.keys()]
+            ef_labels = list(ef_by_device.keys())
+            
+            axes[1, 1].boxplot(ef_data, labels=ef_labels)
+            axes[1, 1].set_title('Ejection Fraction Distribution by Device')
+            axes[1, 1].set_ylabel('Ejection Fraction (%)')
+            axes[1, 1].tick_params(axis='x', rotation=45)
+            axes[1, 1].grid(True, alpha=0.3)
+            axes[1, 1].axhline(y=50, color='red', linestyle='--', alpha=0.7, label='Normal Threshold')
+            axes[1, 1].legend()
+        else:
+            axes[1, 1].text(0.5, 0.5, 'No EF data available by device', ha='center', va='center',
+                           transform=axes[1, 1].transAxes)
+            axes[1, 1].set_title('Ejection Fraction Distribution by Device')
+        
+        plt.tight_layout()
+        device_analytics_path = os.path.join(self.output_dir, 'device_analytics.png')
+        plt.savefig(device_analytics_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Device analytics saved to: {device_analytics_path}")
+    
+    def create_batch_quality_assessment(self):
+        """Create enhanced batch quality assessment visualizations."""
+        print("Creating batch quality assessment...")
+        
+        fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+        fig.suptitle('Enhanced Batch Quality Assessment', fontsize=16)
+        
+        # 1. Median failures per files analysis
+        error_rates = [m['error_rate'] for m in self.all_metrics]
+        if error_rates:
+            median_error_rate = np.median(error_rates)
+            axes[0, 0].hist(error_rates, bins=20, alpha=0.7, color='orange', edgecolor='black')
+            axes[0, 0].axvline(x=median_error_rate, color='red', linestyle='--', 
+                             label=f'Median: {median_error_rate:.3f}')
+            axes[0, 0].axvline(x=np.mean(error_rates), color='blue', linestyle='--', 
+                             label=f'Mean: {np.mean(error_rates):.3f}')
+            axes[0, 0].set_title('Error Rate Distribution\n(Failures per Files)')
+            axes[0, 0].set_xlabel('Error Rate')
+            axes[0, 0].set_ylabel('Frequency')
+            axes[0, 0].legend()
+            axes[0, 0].grid(True, alpha=0.3)
+        else:
+            axes[0, 0].text(0.5, 0.5, 'No error data available', ha='center', va='center',
+                           transform=axes[0, 0].transAxes)
+            axes[0, 0].set_title('Error Rate Distribution')
+        
+        # 2. Processing efficiency distribution
+        processing_rates = [m['processing_success_rate'] for m in self.all_metrics]
+        if processing_rates:
+            axes[0, 1].hist(processing_rates, bins=20, alpha=0.7, color='lightgreen', edgecolor='black')
+            axes[0, 1].axvline(x=np.median(processing_rates), color='red', linestyle='--', 
+                             label=f'Median: {np.median(processing_rates):.3f}')
+            axes[0, 1].axvline(x=np.mean(processing_rates), color='blue', linestyle='--', 
+                             label=f'Mean: {np.mean(processing_rates):.3f}')
+            axes[0, 1].set_title('Processing Success Rate Distribution')
+            axes[0, 1].set_xlabel('Processing Success Rate')
+            axes[0, 1].set_ylabel('Frequency')
+            axes[0, 1].legend()
+            axes[0, 1].grid(True, alpha=0.3)
+        
+        # 3. Batch quality score (composite metric)
+        quality_scores = []
+        for m in self.all_metrics:
+            # Composite quality score: processing success rate - error rate + EF normalization
+            ef_score = 1.0 if m['ejection_fraction'] >= 50 else 0.5 if m['ejection_fraction'] > 0 else 0.0
+            quality_score = (m['processing_success_rate'] * 0.5) + ((1 - m['error_rate']) * 0.3) + (ef_score * 0.2)
+            quality_scores.append(quality_score)
+        
+        if quality_scores:
+            axes[0, 2].hist(quality_scores, bins=20, alpha=0.7, color='purple', edgecolor='black')
+            axes[0, 2].axvline(x=np.median(quality_scores), color='red', linestyle='--', 
+                             label=f'Median: {np.median(quality_scores):.3f}')
+            axes[0, 2].axvline(x=np.mean(quality_scores), color='blue', linestyle='--', 
+                             label=f'Mean: {np.mean(quality_scores):.3f}')
+            axes[0, 2].set_title('Composite Batch Quality Score')
+            axes[0, 2].set_xlabel('Quality Score (0-1)')
+            axes[0, 2].set_ylabel('Frequency')
+            axes[0, 2].legend()
+            axes[0, 2].grid(True, alpha=0.3)
+        
+        # 4. Error type breakdown with percentages
+        total_errors = {}
+        for folder in self.folder_data:
+            if 'error_stats' in folder:
+                for error_type, count in folder['error_stats']['error_counts'].items():
+                    total_errors[error_type] = total_errors.get(error_type, 0) + count
+        
+        if total_errors and sum(total_errors.values()) > 0:
+            error_types = list(total_errors.keys())
+            error_counts = list(total_errors.values())
+            total_error_count = sum(error_counts)
+            
+            # Create pie chart
+            axes[1, 0].pie(error_counts, labels=error_types, autopct='%1.1f%%', startangle=90)
+            axes[1, 0].set_title(f'Error Type Breakdown\n(Total: {total_error_count} errors)')
+        else:
+            axes[1, 0].text(0.5, 0.5, 'No errors found', ha='center', va='center',
+                           transform=axes[1, 0].transAxes)
+            axes[1, 0].set_title('Error Type Breakdown')
+        
+        # 5. Quality trends across folders
+        folder_quality_scores = []
+        folder_names_short = []
+        for i, m in enumerate(self.all_metrics):
+            if i < 20:  # Limit to first 20 for readability
+                ef_score = 1.0 if m['ejection_fraction'] >= 50 else 0.5 if m['ejection_fraction'] > 0 else 0.0
+                quality_score = (m['processing_success_rate'] * 0.5) + ((1 - m['error_rate']) * 0.3) + (ef_score * 0.2)
+                folder_quality_scores.append(quality_score)
+                folder_name = m['folder'][:15] + '...' if len(m['folder']) > 15 else m['folder']
+                folder_names_short.append(folder_name)
+        
+        if folder_quality_scores:
+            bars = axes[1, 1].bar(range(len(folder_quality_scores)), folder_quality_scores, 
+                                color='lightblue', alpha=0.7)
+            axes[1, 1].set_title('Quality Score by Folder (First 20)')
+            axes[1, 1].set_xlabel('Folders')
+            axes[1, 1].set_ylabel('Quality Score')
+            axes[1, 1].set_xticks(range(len(folder_names_short)))
+            axes[1, 1].set_xticklabels(folder_names_short, rotation=45, ha='right', fontsize=8)
+            axes[1, 1].grid(True, alpha=0.3)
+            
+            # Add horizontal line for median quality
+            median_quality = np.median(quality_scores)
+            axes[1, 1].axhline(y=median_quality, color='red', linestyle='--', alpha=0.7,
+                             label=f'Batch Median: {median_quality:.3f}')
+            axes[1, 1].legend()
+        
+        # 6. Correlation matrix of quality metrics
+        if len(self.all_metrics) > 1:
+            # Prepare data for correlation
+            correlation_data = []
+            metric_names = ['Processing Success', 'Error Rate', 'EF Available', 'Video Count']
+            
+            for m in self.all_metrics:
+                correlation_data.append([
+                    m['processing_success_rate'],
+                    m['error_rate'],
+                    1.0 if m['ejection_fraction'] > 0 else 0.0,
+                    m['num_videos'] / 100.0  # Normalize video count
+                ])
+            
+            correlation_matrix = np.corrcoef(np.array(correlation_data).T)
+            
+            im = axes[1, 2].imshow(correlation_matrix, cmap='coolwarm', vmin=-1, vmax=1)
+            axes[1, 2].set_title('Quality Metrics Correlation')
+            axes[1, 2].set_xticks(range(len(metric_names)))
+            axes[1, 2].set_yticks(range(len(metric_names)))
+            axes[1, 2].set_xticklabels(metric_names, rotation=45, ha='right')
+            axes[1, 2].set_yticklabels(metric_names)
+            
+            # Add correlation values to the plot
+            for i in range(len(metric_names)):
+                for j in range(len(metric_names)):
+                    text = axes[1, 2].text(j, i, f'{correlation_matrix[i, j]:.2f}',
+                                          ha="center", va="center", color="black", fontsize=8)
+        else:
+            axes[1, 2].text(0.5, 0.5, 'Insufficient data for correlation', ha='center', va='center',
+                           transform=axes[1, 2].transAxes)
+            axes[1, 2].set_title('Quality Metrics Correlation')
+        
+        plt.tight_layout()
+        batch_quality_path = os.path.join(self.output_dir, 'batch_quality_assessment.png')
+        plt.savefig(batch_quality_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Batch quality assessment saved to: {batch_quality_path}")
+    
     def run_complete_visualization(self):
         """Run the complete visualization pipeline."""
         print("Starting comprehensive EchoPrime visualization...")
@@ -619,6 +891,8 @@ class EchoPrimeVisualizer:
             self.create_overall_summary_dashboard()
             self.create_cardiac_metrics_analysis()
             self.create_folder_comparison_plots()
+            self.create_device_analytics()
+            self.create_batch_quality_assessment()
             self.create_interactive_plots()
             self.create_summary_report()
             
